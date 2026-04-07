@@ -1,0 +1,32 @@
+# Backend (CodeIgniter 4)
+backend/vendor/
+backend/writable/
+backend/.env
+backend/env
+backend/public/uploads/
+backend/public/.htaccess   # optionnel, mais généralement on garde
+backend/.phpunit.result.cache
+backend/phpunit.xml
+
+# Frontend (React + Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Cursor rules
+.cursorrules
