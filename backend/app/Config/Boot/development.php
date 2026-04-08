@@ -12,6 +12,9 @@
  */
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
+ini_set('log_errors', '1');
+// Avec `php spark serve`, stderr remonte dans le terminal du serveur PHP (pas celui de Vite).
+ini_set('error_log', 'php://stderr');
 
 /*
  |--------------------------------------------------------------------------
