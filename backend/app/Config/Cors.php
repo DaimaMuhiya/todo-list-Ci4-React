@@ -35,8 +35,6 @@ class Cors extends BaseConfig
          *   - ['https://www.example.com']
          */
         'allowedOrigins' => [
-            'http://localhost:3000',
-            'http://127.0.0.1:3000',
             'http://localhost:5173',
             'http://127.0.0.1:5173',
         ],
@@ -52,7 +50,10 @@ class Cors extends BaseConfig
          * E.g.:
          *   - ['https://\w+\.example\.com']
          */
-        'allowedOriginsPatterns' => [],
+        'allowedOriginsPatterns' => [
+            // Déploiements Vercel (preview & prod sur *.vercel.app)
+            'https://todo-list-ci4-react.vercel.app/',
+        ],
 
         /**
          * Weather to send the `Access-Control-Allow-Credentials` header.
