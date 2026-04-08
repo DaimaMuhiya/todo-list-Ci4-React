@@ -28,7 +28,9 @@ async function handleNotOkResponse(res: Response): Promise<never> {
   if (preview.trim() !== "") {
     try {
       const body = JSON.parse(text) as Record<string, unknown>;
-      if (body?.error && typeof body.error === "string") {
+      if (body?.message && typeof body.message === "string") {
+        message = body.message;
+      } else if (body?.error && typeof body.error === "string") {
         message = body.error;
       } else if (body?.errors && typeof body.errors === "object") {
         message = Object.values(body.errors as Record<string, string[]>).flat().join(" ");
