@@ -109,6 +109,8 @@ class Filters extends BaseFilters
     public array $filters = [
         'cors' => [
             'before' => ['api/*'],
+            // Réinjecte les en-têtes CORS sur la réponse finale (erreurs BDD, exceptions, etc.)
+            'after' => ['api/*'],
         ],
     ];
 }

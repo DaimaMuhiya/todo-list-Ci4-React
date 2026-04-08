@@ -37,6 +37,7 @@ class Cors extends BaseConfig
         'allowedOrigins' => [
             'http://localhost:5173',
             'http://127.0.0.1:5173',
+            'https://todo-list-ci4-react.vercel.app',
         ],
 
         /**
@@ -51,8 +52,8 @@ class Cors extends BaseConfig
          *   - ['https://\w+\.example\.com']
          */
         'allowedOriginsPatterns' => [
-            // Prod Vercel — (preview & prod sur *.vercel.app)
-            'https://todo-list-ci4-react\.vercel\.app',
+            // Déploiements preview Vercel (*.vercel.app)
+            'https://[a-zA-Z0-9-]+\.vercel\.app',
         ],
 
         /**
