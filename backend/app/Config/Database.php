@@ -7,11 +7,11 @@ use CodeIgniter\Database\Config;
 /**
  * Database Configuration
  *
- * En local : les valeurs peuvent venir de `.env` (chargé par DotEnv).
- * Sur Render : `.env` n’est pas dans l’image Docker → définir les mêmes variables
- * dans le dashboard (ex. `database.default.hostname`, `database.default.password`, …)
- * ou une variable `DATABASE_URL`. BaseConfig fusionne ensuite `getenv()` / `$_ENV`
- * dans `$default` après `applyDatabaseUrlFromEnvironment()`.
+ * En local : les valeurs viennent de `.env` (DotEnv).
+ * Sur Render : pas de `.env` dans l’image → variables dans le dashboard.
+ * Ordre : {@see BaseConfig} fusionne d’abord `database.default.*`, puis
+ * {@see applyLibpqFromEnvironment()} et {@see applyDatabaseUrlFromEnvironment()}
+ * (une `DATABASE_URL` valide a priorité sur les champs individuels).
  */
 class Database extends Config
 {
@@ -278,7 +278,7 @@ class Database extends Config
      */
     private function applyDatabaseUrlFromEnvironment(): void
     {
-        $url = $this->readEnvNonEmpty('DATABASE_URL');
+        $url = $this->normalizeDatabaseUrl($this->readEnvNonEmpty('DATABASE_URL'));
         if ($url === '') {
             return;
         }
@@ -307,5 +307,27 @@ class Database extends Config
                 $this->default['sslmode'] = (string) $query['sslmode'];
             }
         }
+    }
+
+    /**
+     * Sans ceci, une valeur collée dans Render avec des guillemets littéraux
+     * (`"postgresql://..."`) fait échouer parse_url : l’URL est ignorée et l’hôte
+     * reste celui du fichier (ex. localhost).
+     */
+    private function normalizeDatabaseUrl(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return '';
+        }
+
+        if (
+            ($url[0] === '"' && str_ends_with($url, '"'))
+            || ($url[0] === "'" && str_ends_with($url, "'"))
+        ) {
+            $url = substr($url, 1, -1);
+        }
+
+        return trim($url);
     }
 }
