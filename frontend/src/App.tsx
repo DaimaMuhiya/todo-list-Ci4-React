@@ -4,13 +4,18 @@ import { TodoSidebar } from "@/components/todo/sidebar";
 import { TaskList } from "@/components/todo/task-list";
 import { TaskForm } from "@/components/todo/task-form";
 import { Toaster } from "@/components/ui/toaster";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { PanelLeftOpen } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   fetchTodos,
   createTodo,
   updateTodo,
   deleteTodo,
 } from "@/lib/todos-api";
+
+const SIDEBAR_STORAGE_KEY = "taskflow-sidebar-open";
 
 export default function App() {
   const [tasks, setTasks] = useState<Todo[]>([]);
@@ -24,6 +29,23 @@ export default function App() {
   >("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Todo | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    try {
+      const v = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      if (v === "0") return false;
+      return true;
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, sidebarOpen ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [sidebarOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -158,18 +180,47 @@ export default function App() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <TodoSidebar
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-        stats={stats}
-        onAddTask={() => setIsFormOpen(true)}
-      />
+      <div
+        className={cn(
+          "shrink-0 overflow-hidden border-r border-border bg-sidebar transition-[width] duration-200 ease-in-out",
+          sidebarOpen ? "w-64" : "w-0 border-r-0",
+        )}
+      >
+        <TodoSidebar
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          stats={stats}
+          onAddTask={() => setIsFormOpen(true)}
+          onCollapse={() => setSidebarOpen(false)}
+        />
+      </div>
 
-      <main className="flex-1 overflow-hidden">
+      <main className="min-h-0 flex-1 overflow-hidden">
         {loading ? (
-          <div className="flex h-full items-center justify-center text-muted-foreground">
-            Chargement des taches…
-          </div>
+          !sidebarOpen ? (
+            <div className="flex h-full flex-col">
+              <div className="flex items-start gap-3 border-b border-border p-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="mt-1 shrink-0 shadow-sm"
+                  onClick={() => setSidebarOpen(true)}
+                  title="Afficher le panneau"
+                  aria-label="Afficher le panneau lateral"
+                >
+                  <PanelLeftOpen className="h-4 w-4" />
+                </Button>
+                <p className="min-w-0 flex-1 pt-2 text-sm text-muted-foreground">
+                  Chargement des taches…
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-full items-center justify-center text-muted-foreground">
+              Chargement des taches…
+            </div>
+          )
         ) : (
           <TaskList
             tasks={filteredTasks}
@@ -181,6 +232,9 @@ export default function App() {
             onToggle={handleToggle}
             onDelete={handleDelete}
             onEdit={handleEdit}
+            onExpandSidebar={
+              sidebarOpen ? undefined : () => setSidebarOpen(true)
+            }
           />
         )}
       </main>

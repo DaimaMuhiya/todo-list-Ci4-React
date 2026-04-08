@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, ListTodo } from "lucide-react";
+import { Search, Filter, ListTodo, PanelLeftOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Empty,
   EmptyMedia,
@@ -37,6 +38,8 @@ interface TaskListProps {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (task: Todo) => void;
+  /** Si défini, affiche le bouton pour rouvrir la barre latérale à gauche du titre. */
+  onExpandSidebar?: () => void;
 }
 
 export function TaskList({
@@ -49,16 +52,34 @@ export function TaskList({
   onToggle,
   onDelete,
   onEdit,
+  onExpandSidebar,
 }: TaskListProps) {
   return (
     <div className="flex h-full flex-col">
       <header className="border-b border-border p-6">
-        <h2 className="text-2xl font-bold text-foreground">
-          {categoryLabels[selectedCategory]}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {tasks.length} tache{tasks.length !== 1 ? "s" : ""}
-        </p>
+        <div className="flex items-start gap-3">
+          {onExpandSidebar ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="mt-1 shrink-0 shadow-sm"
+              onClick={onExpandSidebar}
+              title="Afficher le panneau"
+              aria-label="Afficher le panneau lateral"
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </Button>
+          ) : null}
+          <div className="min-w-0 flex-1">
+            <h2 className="text-2xl font-bold text-foreground">
+              {categoryLabels[selectedCategory]}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {tasks.length} tache{tasks.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+        </div>
 
         <div className="mt-4 flex items-center gap-3">
           <div className="relative flex-1">

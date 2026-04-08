@@ -10,6 +10,7 @@ import {
   Plus,
   CheckCircle2,
   Clock,
+  PanelLeftClose,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -41,6 +42,7 @@ interface SidebarProps {
     pending: number;
   };
   onAddTask: () => void;
+  onCollapse?: () => void;
 }
 
 export function TodoSidebar({
@@ -48,12 +50,28 @@ export function TodoSidebar({
   onSelectCategory,
   stats,
   onAddTask,
+  onCollapse,
 }: SidebarProps) {
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-border bg-sidebar p-4">
-      <div className="mb-8">
-        <h1 className="text-xl font-bold text-foreground">TaskFlow</h1>
-        <p className="text-sm text-muted-foreground">Gestionnaire de taches</p>
+    <aside className="flex h-full w-64 min-w-64 flex-col bg-sidebar p-4">
+      <div className="mb-8 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-foreground">TaskFlow</h1>
+          <p className="text-sm text-muted-foreground">Gestionnaire de taches</p>
+        </div>
+        {onCollapse ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+            onClick={onCollapse}
+            title="Masquer le panneau"
+            aria-label="Masquer le panneau lateral"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </Button>
+        ) : null}
       </div>
 
       <Button
