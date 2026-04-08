@@ -3,6 +3,7 @@ import type { Todo, Category } from "@/lib/types";
 import { TodoSidebar } from "@/components/todo/sidebar";
 import { TaskList } from "@/components/todo/task-list";
 import { TaskForm } from "@/components/todo/task-form";
+import { Toaster } from "@/components/ui/toaster";
 
 // Donnees de demonstration
 const initialTasks: Todo[] = [
@@ -179,6 +180,7 @@ export default function App() {
         onSubmit={handleSubmit}
         editTask={editingTask}
       />
+      <Toaster />
     </div>
   );
 }
