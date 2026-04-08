@@ -195,9 +195,12 @@ class Database extends Config
 
     public function __construct()
     {
-        $this->applyDatabaseUrlFromEnvironment();
-
         parent::__construct();
+
+        // Après la fusion .env / variables (BaseConfig), sinon des clés comme
+        // database.default.hostname=localhost peuvent écraser une URL déjà parsée.
+        $this->applyLibpqFromEnvironment();
+        $this->applyDatabaseUrlFromEnvironment();
 
         // Ensure that we always set the database group to 'tests' if
         // we are currently running an automated test suite, so that
@@ -208,13 +211,75 @@ class Database extends Config
     }
 
     /**
+     * Lecture robuste des variables injectées par le PaaS (Apache ne remplit pas
+     * toujours getenv() comme CLI — $_SERVER est souvent peuplé).
+     */
+    private function readEnvNonEmpty(string $key): string
+    {
+        $value = getenv($key);
+        if ($value !== false && $value !== '') {
+            return $value;
+        }
+
+        if (isset($_ENV[$key]) && is_string($_ENV[$key]) && $_ENV[$key] !== '') {
+            return $_ENV[$key];
+        }
+
+        if (isset($_SERVER[$key]) && is_string($_SERVER[$key]) && $_SERVER[$key] !== '') {
+            return $_SERVER[$key];
+        }
+
+        return '';
+    }
+
+    /**
+     * Variables d’environnement standard libpq (optionnel, ex. scripts ou images custom).
+     * Surchargée par {@see applyDatabaseUrlFromEnvironment()} si `DATABASE_URL` est défini.
+     */
+    private function applyLibpqFromEnvironment(): void
+    {
+        $host = $this->readEnvNonEmpty('PGHOST');
+        if ($host === '') {
+            return;
+        }
+
+        $this->default['DBDriver'] = 'Postgre';
+        $this->default['hostname'] = $host;
+
+        $port = $this->readEnvNonEmpty('PGPORT');
+        $this->default['port'] = $port !== '' ? (int) $port : 5432;
+
+        $user = $this->readEnvNonEmpty('PGUSER');
+        if ($user !== '') {
+            $this->default['username'] = $user;
+        }
+
+        $password = $this->readEnvNonEmpty('PGPASSWORD');
+        if ($password !== '') {
+            $this->default['password'] = $password;
+        }
+
+        $database = $this->readEnvNonEmpty('PGDATABASE');
+        if ($database !== '') {
+            $this->default['database'] = $database;
+        }
+
+        $sslmode = $this->readEnvNonEmpty('PGSSLMODE');
+        if ($sslmode !== '') {
+            $this->default['sslmode'] = $sslmode;
+        }
+    }
+
+    /**
      * Render (et autres PaaS) exposent souvent Postgres uniquement via DATABASE_URL.
      * Sans ceci, le conteneur garde hostname=localhost et la connexion échoue (HTTP 500).
+     *
+     * Sur Render : lier l’instance PostgreSQL au Web Service pour injecter `DATABASE_URL`.
      */
     private function applyDatabaseUrlFromEnvironment(): void
     {
-        $url = getenv('DATABASE_URL');
-        if ($url === false || $url === '') {
+        $url = $this->readEnvNonEmpty('DATABASE_URL');
+        if ($url === '') {
             return;
         }
 
