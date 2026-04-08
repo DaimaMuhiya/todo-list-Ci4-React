@@ -19,4 +19,7 @@ cat >/etc/apache2/sites-available/000-default.conf <<EOF
 </VirtualHost>
 EOF
 
+cd /var/www/html
+php spark migrate --all
+
 exec apache2-foreground

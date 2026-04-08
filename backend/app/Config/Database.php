@@ -6,6 +6,12 @@ use CodeIgniter\Database\Config;
 
 /**
  * Database Configuration
+ *
+ * En local : les valeurs peuvent venir de `.env` (chargé par DotEnv).
+ * Sur Render : `.env` n’est pas dans l’image Docker → définir les mêmes variables
+ * dans le dashboard (ex. `database.default.hostname`, `database.default.password`, …)
+ * ou une variable `DATABASE_URL`. BaseConfig fusionne ensuite `getenv()` / `$_ENV`
+ * dans `$default` après `applyDatabaseUrlFromEnvironment()`.
  */
 class Database extends Config
 {
@@ -39,6 +45,8 @@ class Database extends Config
         'swapPre'    => '',
         'failover'   => [],
         'port'       => 5432,
+        // Vide en local ; sur Render avec Postgres managé : « require » (voir DATABASE_URL ou database.default.sslmode)
+        'sslmode'    => '',
         'dateFormat' => [
             'date'     => 'Y-m-d',
             'datetime' => 'Y-m-d H:i:s',
@@ -187,6 +195,8 @@ class Database extends Config
 
     public function __construct()
     {
+        $this->applyDatabaseUrlFromEnvironment();
+
         parent::__construct();
 
         // Ensure that we always set the database group to 'tests' if
@@ -194,6 +204,43 @@ class Database extends Config
         // we don't overwrite live data on accident.
         if (ENVIRONMENT === 'testing') {
             $this->defaultGroup = 'tests';
+        }
+    }
+
+    /**
+     * Render (et autres PaaS) exposent souvent Postgres uniquement via DATABASE_URL.
+     * Sans ceci, le conteneur garde hostname=localhost et la connexion échoue (HTTP 500).
+     */
+    private function applyDatabaseUrlFromEnvironment(): void
+    {
+        $url = getenv('DATABASE_URL');
+        if ($url === false || $url === '') {
+            return;
+        }
+
+        $parts = parse_url($url);
+        if ($parts === false || ! isset($parts['scheme'])) {
+            return;
+        }
+
+        $scheme = strtolower((string) $parts['scheme']);
+        if (! in_array($scheme, ['postgres', 'postgresql'], true)) {
+            return;
+        }
+
+        $this->default['DBDriver'] = 'Postgre';
+        $this->default['hostname'] = (string) ($parts['host'] ?? '');
+        $this->default['port'] = isset($parts['port']) ? (int) $parts['port'] : 5432;
+        $this->default['username'] = isset($parts['user']) ? rawurldecode((string) $parts['user']) : '';
+        $this->default['password'] = isset($parts['pass']) ? rawurldecode((string) $parts['pass']) : '';
+        $this->default['database'] = isset($parts['path']) ? rawurldecode(ltrim((string) $parts['path'], '/')) : '';
+        $this->default['sslmode'] = 'require';
+
+        if (! empty($parts['query'])) {
+            parse_str((string) $parts['query'], $query);
+            if (! empty($query['sslmode'])) {
+                $this->default['sslmode'] = (string) $query['sslmode'];
+            }
         }
     }
 }

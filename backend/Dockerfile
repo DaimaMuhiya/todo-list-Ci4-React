@@ -6,11 +6,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcurl4-openssl-dev \
     libicu-dev \
     libonig-dev \
+    libpq-dev \
     libzip-dev \
     unzip \
     zip \
     && docker-php-ext-configure intl \
-    && docker-php-ext-install -j"$(nproc)" intl mbstring pdo_mysql opcache zip curl \
+    && docker-php-ext-install -j"$(nproc)" intl mbstring pgsql pdo_mysql opcache zip curl \
     && a2enmod rewrite \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
