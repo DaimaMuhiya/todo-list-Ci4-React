@@ -25,7 +25,9 @@ import {
 interface TaskFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (task: Omit<Todo, "id" | "createdAt">) => void;
+  onSubmit: (
+    task: Omit<Todo, "id" | "createdAt">,
+  ) => void | Promise<void>;
   editTask?: Todo | null;
 }
 
@@ -61,21 +63,26 @@ export function TaskForm({
     setDueDate("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    onSubmit({
-      title: title.trim(),
-      description: description.trim() || undefined,
-      completed: editTask?.completed || false,
-      priority,
-      category,
-      dueDate: dueDate || undefined,
-    });
-
-    resetForm();
-    onOpenChange(false);
+    try {
+      await Promise.resolve(
+        onSubmit({
+          title: title.trim(),
+          description: description.trim() || undefined,
+          completed: editTask?.completed || false,
+          priority,
+          category,
+          dueDate: dueDate || undefined,
+        }),
+      );
+      resetForm();
+      onOpenChange(false);
+    } catch {
+      /* Erreurs réseau / API gérées par le parent (toast, etc.) */
+    }
   };
 
   return (

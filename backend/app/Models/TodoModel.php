@@ -1,0 +1,54 @@
+<?php
+
+namespace App\Models;
+
+use CodeIgniter\Model;
+
+class TodoModel extends Model
+{
+    protected $table            = 'todos';
+    protected $primaryKey       = 'id';
+    protected $useAutoIncrement = true;
+    protected $returnType       = 'array';
+    protected $useSoftDeletes   = false;
+    protected $protectFields    = true;
+    protected $allowedFields    = [
+        'title',
+        'description',
+        'completed',
+        'priority',
+        'category',
+        'due_date',
+        'created_at',
+    ];
+
+    protected bool $allowEmptyInserts = false;
+
+    protected array $casts = [
+        'id'          => 'integer',
+        'completed'   => 'boolean',
+        'due_date'    => '?string',
+        'created_at'  => '?string',
+        'description' => '?string',
+    ];
+
+    // Dates
+    protected $useTimestamps      = false;
+    protected $dateFormat          = 'datetime';
+    protected $createdField        = 'created_at';
+    protected $updatedField        = '';
+
+    protected $beforeInsert = ['setCreatedAt'];
+
+    /**
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
+     */
+    protected function setCreatedAt(array $data): array
+    {
+        $data['data']['created_at'] = date('Y-m-d H:i:s');
+
+        return $data;
+    }
+}

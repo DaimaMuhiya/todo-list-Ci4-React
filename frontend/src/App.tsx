@@ -1,76 +1,20 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { Todo, Category } from "@/lib/types";
 import { TodoSidebar } from "@/components/todo/sidebar";
 import { TaskList } from "@/components/todo/task-list";
 import { TaskForm } from "@/components/todo/task-form";
 import { Toaster } from "@/components/ui/toaster";
-
-// Donnees de demonstration
-const initialTasks: Todo[] = [
-  {
-    id: "1",
-    title: "Finaliser le rapport trimestriel",
-    description:
-      "Completer les sections financieres et ajouter les graphiques de performance.",
-    completed: false,
-    priority: "high",
-    category: "work",
-    dueDate: "2026-04-10",
-    createdAt: "2026-04-05T10:00:00",
-  },
-  {
-    id: "2",
-    title: "Reunion avec le client",
-    description: "Preparer la presentation pour la reunion de demain.",
-    completed: true,
-    priority: "high",
-    category: "work",
-    dueDate: "2026-04-07",
-    createdAt: "2026-04-04T14:30:00",
-  },
-  {
-    id: "3",
-    title: "Faire les courses",
-    description: "Legumes, fruits, pain, lait",
-    completed: false,
-    priority: "medium",
-    category: "personal",
-    dueDate: "2026-04-08",
-    createdAt: "2026-04-06T09:00:00",
-  },
-  {
-    id: "4",
-    title: "Payer les factures",
-    completed: false,
-    priority: "high",
-    category: "urgent",
-    dueDate: "2026-04-09",
-    createdAt: "2026-04-05T16:00:00",
-  },
-  {
-    id: "5",
-    title: "Appeler le medecin",
-    description: "Prendre rendez-vous pour le controle annuel.",
-    completed: false,
-    priority: "low",
-    category: "personal",
-    createdAt: "2026-04-03T11:00:00",
-  },
-  {
-    id: "6",
-    title: "Reviser le code du projet",
-    description:
-      "Effectuer une revue de code pour les nouvelles fonctionnalites.",
-    completed: false,
-    priority: "medium",
-    category: "work",
-    dueDate: "2026-04-12",
-    createdAt: "2026-04-06T08:00:00",
-  },
-];
+import { toast } from "@/hooks/use-toast";
+import {
+  fetchTodos,
+  createTodo,
+  updateTodo,
+  deleteTodo,
+} from "@/lib/todos-api";
 
 export default function App() {
-  const [tasks, setTasks] = useState<Todo[]>(initialTasks);
+  const [tasks, setTasks] = useState<Todo[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<Category | "all">(
     "all",
   );
@@ -81,24 +25,49 @@ export default function App() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Todo | null>(null);
 
-  // Statistiques
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const data = await fetchTodos();
+        if (!cancelled) setTasks(data);
+      } catch (err) {
+        if (!cancelled) {
+          const message =
+            err instanceof Error
+              ? err.message
+              : "Impossible de charger les taches.";
+          toast({
+            title: "Chargement",
+            description: message,
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const stats = useMemo(() => {
     const total = tasks.length;
     const completed = tasks.filter((t) => t.completed).length;
     return { total, completed, pending: total - completed };
   }, [tasks]);
 
-  // Taches filtrees
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
-      // Filtre par categorie
       if (selectedCategory !== "all" && task.category !== selectedCategory) {
         return false;
       }
-      // Filtre par statut
       if (filterStatus === "pending" && task.completed) return false;
       if (filterStatus === "completed" && !task.completed) return false;
-      // Filtre par recherche
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         return (
@@ -110,15 +79,45 @@ export default function App() {
     });
   }, [tasks, selectedCategory, filterStatus, searchQuery]);
 
-  // Actions
-  const handleToggle = (id: string) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
-    );
+  const handleToggle = async (id: string) => {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+    const next = { ...task, completed: !task.completed };
+    const payload: Omit<Todo, "id" | "createdAt"> = {
+      title: next.title,
+      description: next.description,
+      completed: next.completed,
+      priority: next.priority,
+      category: next.category,
+      dueDate: next.dueDate,
+    };
+    try {
+      const saved = await updateTodo(id, payload);
+      setTasks((prev) => prev.map((t) => (t.id === id ? saved : t)));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Mise a jour impossible.";
+      toast({
+        title: "Tache",
+        description: message,
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteTodo(id);
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Suppression impossible.";
+      toast({
+        title: "Suppression",
+        description: message,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEdit = (task: Todo) => {
@@ -126,21 +125,27 @@ export default function App() {
     setIsFormOpen(true);
   };
 
-  const handleSubmit = (taskData: Omit<Todo, "id" | "createdAt">) => {
-    if (editingTask) {
-      // Modification
-      setTasks((prev) =>
-        prev.map((t) => (t.id === editingTask.id ? { ...t, ...taskData } : t)),
-      );
-      setEditingTask(null);
-    } else {
-      // Creation
-      const newTask: Todo = {
-        ...taskData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-      };
-      setTasks((prev) => [newTask, ...prev]);
+  const handleSubmit = async (taskData: Omit<Todo, "id" | "createdAt">) => {
+    try {
+      if (editingTask) {
+        const saved = await updateTodo(editingTask.id, taskData);
+        setTasks((prev) =>
+          prev.map((t) => (t.id === editingTask.id ? saved : t)),
+        );
+        setEditingTask(null);
+      } else {
+        const saved = await createTodo(taskData);
+        setTasks((prev) => [saved, ...prev]);
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Enregistrement impossible.";
+      toast({
+        title: editingTask ? "Modification" : "Creation",
+        description: message,
+        variant: "destructive",
+      });
+      throw err;
     }
   };
 
@@ -161,17 +166,23 @@ export default function App() {
       />
 
       <main className="flex-1 overflow-hidden">
-        <TaskList
-          tasks={filteredTasks}
-          selectedCategory={selectedCategory}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          filterStatus={filterStatus}
-          onFilterChange={setFilterStatus}
-          onToggle={handleToggle}
-          onDelete={handleDelete}
-          onEdit={handleEdit}
-        />
+        {loading ? (
+          <div className="flex h-full items-center justify-center text-muted-foreground">
+            Chargement des taches…
+          </div>
+        ) : (
+          <TaskList
+            tasks={filteredTasks}
+            selectedCategory={selectedCategory}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            filterStatus={filterStatus}
+            onFilterChange={setFilterStatus}
+            onToggle={handleToggle}
+            onDelete={handleDelete}
+            onEdit={handleEdit}
+          />
+        )}
       </main>
 
       <TaskForm
