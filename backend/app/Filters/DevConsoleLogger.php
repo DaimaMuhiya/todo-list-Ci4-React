@@ -10,11 +10,13 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 
 /**
- * En development only : journalise chaque requête HTTP sur STDERR
- * (terminal où tourne `php spark serve`), sur le modèle d’un accès log / Winston.
+ * En development only : journalise chaque requête HTTP sur la sortie d’erreur PHP
+ * (terminal où tourne `php spark serve`). Évite la constante STDERR (absente en built-in server).
  */
 class DevConsoleLogger implements FilterInterface
 {
+    private const STDERR_URI = 'php://stderr';
+
     public function before(RequestInterface $request, $arguments = null)
     {
         return null;
@@ -56,9 +58,18 @@ class DevConsoleLogger implements FilterInterface
             $durationMs,
         );
 
-        fwrite(STDERR, $line);
+        $this->writeStderr($line);
 
         return null;
+    }
+
+    private function writeStderr(string $line): void
+    {
+        $fh = @fopen(self::STDERR_URI, 'wb');
+        if ($fh !== false) {
+            fwrite($fh, $line);
+            fclose($fh);
+        }
     }
 
     private function dim(string $label): string
@@ -91,6 +102,18 @@ class DevConsoleLogger implements FilterInterface
 
     private function stderrColor(): bool
     {
-        return function_exists('stream_isatty') && @stream_isatty(STDERR);
+        if (! function_exists('stream_isatty')) {
+            return false;
+        }
+
+        $fh = @fopen(self::STDERR_URI, 'rb');
+        if ($fh === false) {
+            return false;
+        }
+
+        $tty = @stream_isatty($fh);
+        fclose($fh);
+
+        return $tty === true;
     }
 }
