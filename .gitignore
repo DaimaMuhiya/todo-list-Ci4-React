@@ -1,6 +1,6 @@
 # Backend (CodeIgniter 4)
 backend/vendor/
-backend/writable/
+# writable : suivre la structure (voir backend/.gitignore pour cache/logs/…)
 backend/.env
 backend/env
 backend/public/uploads/

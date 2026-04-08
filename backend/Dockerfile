@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libicu-dev \
     libonig-dev \
     libzip-dev \
+    unzip \
     zip \
     && docker-php-ext-configure intl \
     && docker-php-ext-install -j"$(nproc)" intl mbstring pdo_mysql opcache zip curl \
@@ -26,6 +27,7 @@ COPY . .
 RUN composer dump-autoload --optimize --no-dev \
     && composer clear-cache \
     && rm -f /usr/bin/composer \
+    && mkdir -p writable/cache writable/logs writable/session writable/uploads writable/debugbar \
     && chown -R www-data:www-data /var/www/html/writable
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
