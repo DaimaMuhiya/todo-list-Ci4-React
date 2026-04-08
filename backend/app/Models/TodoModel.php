@@ -24,12 +24,9 @@ class TodoModel extends Model
 
     protected bool $allowEmptyInserts = false;
 
+    /** @var array<string, string> Seuls les types reconnus par DataCaster (ex. boolean) */
     protected array $casts = [
-        'id'          => 'integer',
-        'completed'   => 'boolean',
-        'due_date'    => '?string',
-        'created_at'  => '?string',
-        'description' => '?string',
+        'completed' => 'boolean',
     ];
 
     // Dates
