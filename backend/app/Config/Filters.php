@@ -15,6 +15,16 @@ use CodeIgniter\Filters\SecureHeaders;
 
 class Filters extends BaseFilters
 {
+    public function __construct()
+    {
+        parent::__construct();
+
+        if (ENVIRONMENT === 'development') {
+            $this->aliases['devconsole'] = \App\Filters\DevConsoleLogger::class;
+            $this->globals['after'][] = 'devconsole';
+        }
+    }
+
     /**
      * Configures aliases for Filter classes to
      * make reading things nicer and simpler.
