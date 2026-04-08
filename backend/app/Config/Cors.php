@@ -51,8 +51,8 @@ class Cors extends BaseConfig
          *   - ['https://\w+\.example\.com']
          */
         'allowedOriginsPatterns' => [
-            // Déploiements Vercel (preview & prod sur *.vercel.app)
-            'https://todo-list-ci4-react.vercel.app/',
+            // Prod Vercel — (preview & prod sur *.vercel.app)
+            'https://todo-list-ci4-react\.vercel\.app',
         ],
 
         /**

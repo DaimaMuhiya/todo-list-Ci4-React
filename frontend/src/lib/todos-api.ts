@@ -1,6 +1,12 @@
 import type { Todo } from "@/lib/types";
 
-const BASE = "/api/todos";
+/** En prod (`vite build`), défini dans `.env.production`. Vide en dev → proxy Vite. */
+const API_ORIGIN = (import.meta.env.VITE_API_URL as string | undefined)?.replace(
+  /\/$/,
+  "",
+) ?? "";
+
+const BASE = `${API_ORIGIN}/api/todos`;
 
 async function parseError(res: Response): Promise<string> {
   try {
