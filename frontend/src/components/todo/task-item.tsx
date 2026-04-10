@@ -54,15 +54,25 @@ export function TaskItem({ task, onToggle, onDelete, onEdit }: TaskItemProps) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <h3
-            className={cn(
-              "font-medium text-foreground transition-all",
-              task.completed && "line-through text-muted-foreground",
-            )}
-          >
-            {task.title}
-          </h3>
-          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <h3
+              className={cn(
+                "min-w-0 font-medium text-foreground transition-all",
+                task.completed && "line-through text-muted-foreground",
+              )}
+            >
+              {task.title}
+            </h3>
+            {task.completed ? (
+              <Badge
+                variant="outline"
+                className="shrink-0 border-emerald-500/40 bg-emerald-500/15 text-emerald-500 dark:text-emerald-400"
+              >
+                Terminé
+              </Badge>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
             <Button
               variant="ghost"
               size="icon"
