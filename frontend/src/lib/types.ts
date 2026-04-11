@@ -9,6 +9,15 @@ export interface CategoryInfo {
   color: string;
 }
 
+/** Colonne du tableau (sections système : todo, in_progress, done). */
+export interface BoardSection {
+  id: string;
+  name: string;
+  /** Présent uniquement pour les trois colonnes par défaut. */
+  slug?: string | null;
+  sortOrder: number;
+}
+
 export interface Todo {
   id: string;
   title: string;
@@ -16,6 +25,8 @@ export interface Todo {
   completed: boolean;
   priority: Priority;
   category: Category;
+  /** Identifiant de la colonne (`board_sections.id`). */
+  sectionId: string;
   dueDate?: string;
   createdAt: string;
 }

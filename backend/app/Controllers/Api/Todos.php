@@ -3,6 +3,7 @@
 namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
+use App\Models\BoardSectionModel;
 use App\Models\TodoModel;
 use CodeIgniter\HTTP\ResponseInterface;
 
@@ -45,6 +46,7 @@ class Todos extends BaseController
         }
 
         $row = $this->payloadToRow($payload, false);
+        $row = $this->finalizeTodoRow($payload, $row, null, false);
 
         if (! $this->validatePayload($row, true)) {
             return $this->response->setStatusCode(422)->setJSON(['errors' => $this->validator->getErrors()]);
@@ -81,6 +83,7 @@ class Todos extends BaseController
         }
 
         $row = $this->payloadToRow($payload, true);
+        $row = $this->finalizeTodoRow($payload, $row, $existing, true);
         $merged = array_merge($existing, $row);
 
         if (! $this->validatePayload($merged, true)) {
@@ -121,6 +124,8 @@ class Todos extends BaseController
     {
         $description = $row['description'] ?? null;
 
+        $sectionId = $row['section_id'] ?? null;
+
         return [
             'id'          => (string) $row['id'],
             'title'       => $row['title'],
@@ -128,6 +133,7 @@ class Todos extends BaseController
             'completed'   => $this->toBool($row['completed'] ?? false),
             'priority'    => $row['priority'],
             'category'    => $row['category'],
+            'sectionId'   => $sectionId !== null && $sectionId !== '' ? (string) $sectionId : (string) $this->getSectionIdBySlug('todo'),
             'dueDate'     => isset($row['due_date']) && $row['due_date'] !== null && $row['due_date'] !== ''
                 ? $this->formatDate($row['due_date'])
                 : null,
@@ -170,6 +176,14 @@ class Todos extends BaseController
             $row['due_date'] = ($due === null || $due === '') ? null : (string) $due;
         }
 
+        if (! $partial || array_key_exists('sectionId', $payload)) {
+            if (array_key_exists('sectionId', $payload) && $payload['sectionId'] !== null && $payload['sectionId'] !== '') {
+                $row['section_id'] = (int) $payload['sectionId'];
+            } elseif (! $partial) {
+                $row['section_id'] = null;
+            }
+        }
+
         return $row;
     }
 
@@ -183,9 +197,94 @@ class Todos extends BaseController
             'priority' => 'if_exist|in_list[low,medium,high]',
             'category' => 'if_exist|in_list[work,personal,urgent,other]',
             'due_date' => 'permit_empty|valid_date',
+            'section_id' => 'permit_empty|is_natural_no_zero',
         ];
 
-        return $this->validateData($data, $rules);
+        if (! $this->validateData($data, $rules)) {
+            return false;
+        }
+
+        if (isset($data['section_id']) && $data['section_id'] !== null && $data['section_id'] !== '') {
+            $sid = (int) $data['section_id'];
+
+            if (model(BoardSectionModel::class)->find($sid) === null) {
+                $this->validator->setError('section_id', 'Section invalide.');
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    protected function getSectionIdBySlug(string $slug): int
+    {
+        $row = model(BoardSectionModel::class)->select('id')->where('slug', $slug)->first();
+
+        return $row !== null ? (int) $row['id'] : 0;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    protected function syncCompletedWithSection(array &$row): void
+    {
+        $id = $row['section_id'] ?? null;
+
+        if ($id === null || $id === '') {
+            return;
+        }
+
+        $section = model(BoardSectionModel::class)->select('slug')->find((int) $id);
+        $slug = $section['slug'] ?? null;
+        $row['completed'] = ($slug === 'done');
+    }
+
+    /**
+     * @param array<string, mixed>      $payload
+     * @param array<string, mixed>      $row
+     * @param array<string, mixed>|null $existing
+     *
+     * @return array<string, mixed>
+     */
+    protected function finalizeTodoRow(array $payload, array $row, ?array $existing, bool $partial): array
+    {
+        if (! $partial) {
+            if (! isset($row['section_id']) || $row['section_id'] === null) {
+                if ($this->toBool($payload['completed'] ?? false)) {
+                    $row['section_id'] = $this->getSectionIdBySlug('done');
+                } else {
+                    $row['section_id'] = $this->getSectionIdBySlug('todo');
+                }
+            }
+
+            $this->syncCompletedWithSection($row);
+
+            return $row;
+        }
+
+        $merged = $existing !== null ? array_merge($existing, $row) : $row;
+
+        if (array_key_exists('section_id', $row)) {
+            $this->syncCompletedWithSection($merged);
+        } elseif (array_key_exists('completed', $row)) {
+            if ($this->toBool($merged['completed'] ?? false)) {
+                $merged['section_id'] = $this->getSectionIdBySlug('done');
+            } else {
+                $merged['section_id'] = $this->getSectionIdBySlug('todo');
+            }
+
+            $merged['completed'] = $this->toBool($merged['completed'] ?? false);
+        }
+
+        $out = $row;
+
+        if (array_key_exists('section_id', $row) || array_key_exists('completed', $row)) {
+            $out['section_id'] = $merged['section_id'];
+            $out['completed'] = $this->toBool($merged['completed'] ?? false);
+        }
+
+        return $out;
     }
 
     protected function toBool(mixed $value): bool

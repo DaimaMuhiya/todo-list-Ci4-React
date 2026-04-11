@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import type { Todo, Category } from "@/lib/types";
+import type { Todo, Category, BoardSection } from "@/lib/types";
 import { TodoSidebar } from "@/components/todo/sidebar";
 import { TaskList } from "@/components/todo/task-list";
 import { TaskForm } from "@/components/todo/task-form";
@@ -14,11 +14,17 @@ import {
   updateTodo,
   deleteTodo,
 } from "@/lib/todos-api";
+import {
+  fetchSections,
+  createSection,
+  deleteSection,
+} from "@/lib/sections-api";
 
 const SIDEBAR_STORAGE_KEY = "taskflow-sidebar-open";
 
 export default function App() {
   const [tasks, setTasks] = useState<Todo[]>([]);
+  const [sections, setSections] = useState<BoardSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<Category | "all">(
     "all",
@@ -53,8 +59,11 @@ export default function App() {
     (async () => {
       setLoading(true);
       try {
-        const data = await fetchTodos();
-        if (!cancelled) setTasks(data);
+        const [data, secs] = await Promise.all([fetchTodos(), fetchSections()]);
+        if (!cancelled) {
+          setTasks(data);
+          setSections(secs);
+        }
       } catch (err) {
         if (!cancelled) {
           const message =
@@ -111,6 +120,7 @@ export default function App() {
       completed: next.completed,
       priority: next.priority,
       category: next.category,
+      sectionId: next.sectionId,
       dueDate: next.dueDate,
     };
     try {
@@ -147,6 +157,77 @@ export default function App() {
     setIsFormOpen(true);
   };
 
+  const handleTaskMove = async (taskId: string, sectionId: string) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    try {
+      const saved = await updateTodo(taskId, {
+        title: task.title,
+        description: task.description,
+        completed: task.completed,
+        priority: task.priority,
+        category: task.category,
+        sectionId,
+        dueDate: task.dueDate,
+      });
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? saved : t)));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Deplacement impossible.";
+      toast({
+        title: "Tableau",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddSection = async (name: string) => {
+    try {
+      const created = await createSection(name);
+      setSections((prev) =>
+        [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder),
+      );
+      toast({ title: "Section", description: `« ${created.name} » ajoutée.` });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Creation de section impossible.";
+      toast({
+        title: "Section",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSection = async (sectionId: string) => {
+    try {
+      await deleteSection(sectionId);
+      const todoId = sections.find((s) => s.slug === "todo")?.id;
+      setSections((prev) => prev.filter((s) => s.id !== sectionId));
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.sectionId === sectionId
+            ? {
+                ...t,
+                sectionId: todoId ?? t.sectionId,
+                completed: false,
+              }
+            : t,
+        ),
+      );
+      toast({ title: "Section", description: "Section supprimée." });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Suppression impossible.";
+      toast({
+        title: "Section",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSubmit = async (taskData: Omit<Todo, "id" | "createdAt">) => {
     try {
       if (editingTask) {
@@ -156,7 +237,19 @@ export default function App() {
         );
         setEditingTask(null);
       } else {
-        const saved = await createTodo(taskData);
+        const todoSectionId = sections.find((s) => s.slug === "todo")?.id;
+        if (!todoSectionId) {
+          toast({
+            title: "Creation",
+            description: "Colonnes non chargees. Reessayez dans un instant.",
+            variant: "destructive",
+          });
+          throw new Error("Colonnes non chargees.");
+        }
+        const saved = await createTodo({
+          ...taskData,
+          sectionId: todoSectionId,
+        });
         setTasks((prev) => [saved, ...prev]);
       }
     } catch (err) {
@@ -224,6 +317,7 @@ export default function App() {
         ) : (
           <TaskList
             tasks={filteredTasks}
+            sections={sections}
             selectedCategory={selectedCategory}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -232,6 +326,9 @@ export default function App() {
             onToggle={handleToggle}
             onDelete={handleDelete}
             onEdit={handleEdit}
+            onTaskMove={handleTaskMove}
+            onAddSection={handleAddSection}
+            onDeleteSection={handleDeleteSection}
             onExpandSidebar={
               sidebarOpen ? undefined : () => setSidebarOpen(true)
             }

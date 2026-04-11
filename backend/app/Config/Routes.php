@@ -11,6 +11,12 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     // Preflight CORS : sans route OPTIONS, le routeur renvoie 404 avant les filtres (pas d'en-têtes CORS).
     $routes->options('todos', static fn () => service('response')->setStatusCode(204));
     $routes->options('todos/(:num)', static fn () => service('response')->setStatusCode(204));
+    $routes->options('sections', static fn () => service('response')->setStatusCode(204));
+    $routes->options('sections/(:num)', static fn () => service('response')->setStatusCode(204));
+
+    $routes->get('sections', 'Sections::index');
+    $routes->post('sections', 'Sections::create');
+    $routes->delete('sections/(:num)', 'Sections::delete/$1');
 
     $routes->get('todos', 'Todos::index');
     $routes->get('todos/(:num)', 'Todos::show/$1');

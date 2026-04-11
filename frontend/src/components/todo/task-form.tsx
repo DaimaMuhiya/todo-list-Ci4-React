@@ -76,6 +76,7 @@ export function TaskForm({
           priority,
           category,
           dueDate: dueDate || undefined,
+          sectionId: editTask?.sectionId ?? "",
         }),
       );
       resetForm();

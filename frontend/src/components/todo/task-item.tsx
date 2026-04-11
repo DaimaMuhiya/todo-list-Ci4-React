@@ -34,16 +34,34 @@ interface TaskItemProps {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (task: Todo) => void;
+  /** Glisser-déposer vers une autre colonne (tableau type Asana). */
+  draggable?: boolean;
 }
 
-export function TaskItem({ task, onToggle, onDelete, onEdit }: TaskItemProps) {
+export const TASK_DRAG_MIME = "application/x-taskflow-task-id";
+
+export function TaskItem({
+  task,
+  onToggle,
+  onDelete,
+  onEdit,
+  draggable = true,
+}: TaskItemProps) {
   const priority = priorityConfig[task.priority];
 
   return (
     <div
+      draggable={draggable}
+      onDragStart={(e) => {
+        if (!draggable) return;
+        e.dataTransfer.setData(TASK_DRAG_MIME, task.id);
+        e.dataTransfer.setData("text/plain", task.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
       className={cn(
         "group flex items-start gap-4 rounded-xl border border-border bg-card p-4 transition-all duration-200 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5",
         task.completed && "opacity-60",
+        draggable && "cursor-grab active:cursor-grabbing",
       )}
     >
       <Checkbox
