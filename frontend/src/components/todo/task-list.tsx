@@ -164,10 +164,10 @@ export function TaskList({
               <h2 className="text-2xl font-bold text-foreground">
                 {categoryLabels[selectedCategory]}
               </h2>
-              <span className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground">
+              {/* <span className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground">
                 <LayoutGrid className="h-3.5 w-3.5" />
                 Tableau
-              </span>
+              </span> */}
             </div>
             <p className="text-sm text-muted-foreground">
               {tasks.length} tache{tasks.length !== 1 ? "s" : ""} — glissez les
