@@ -19,6 +19,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
             'auth/register',
             'auth/login',
             'auth/logout',
+            'auth/account',
             'auth/me',
             'auth/magic',
             'admin/users',
@@ -34,6 +35,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
 
     $routes->group('', ['filter' => 'jwtauth'], static function ($routes) {
         $routes->post('auth/logout', 'Auth::logout');
+        $routes->delete('auth/account', 'Auth::deleteAccount');
         $routes->get('auth/me', 'Auth::me');
 
         $routes->get('sections', 'Sections::index');

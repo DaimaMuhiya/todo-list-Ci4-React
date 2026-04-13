@@ -67,6 +67,12 @@ export async function logout(): Promise<void> {
   }
 }
 
+export async function deleteAccount(): Promise<void> {
+  const res = await apiFetch("/api/auth/account", { method: "DELETE" });
+  if (!res.ok) await handleNotOkResponse(res);
+  clearStoredAccessToken();
+}
+
 export interface RegisterPayload {
   lastName: string;
   firstName: string;

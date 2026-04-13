@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { Category, CategoryInfo, User } from "@/lib/types";
 import {
@@ -11,10 +12,15 @@ import {
   Clock,
   PanelLeftClose,
   Shield,
-  LogOut,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const categories: CategoryInfo[] = [
   { id: "work", label: "Travail", icon: "briefcase", color: "text-blue-400" },
@@ -47,7 +53,8 @@ interface SidebarProps {
   statsLoading?: boolean;
   onCollapse?: () => void;
   user?: User | null;
-  onLogout?: () => void;
+  onLogout?: () => void | Promise<void>;
+  onDeleteAccount?: () => void | Promise<void>;
   onAdmin?: () => void;
 }
 
@@ -59,8 +66,11 @@ export function TodoSidebar({
   onCollapse,
   user,
   onLogout,
+  onDeleteAccount,
   onAdmin,
 }: SidebarProps) {
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+
   return (
     <aside className="flex h-full w-64 min-w-64 flex-col bg-sidebar p-4">
       <div className="mb-8 flex items-start justify-between gap-2">
@@ -156,36 +166,89 @@ export function TodoSidebar({
 
         {user ? (
           <div className="space-y-2 rounded-lg border border-border bg-secondary/40 p-3">
-            <p className="truncate text-sm font-medium text-foreground">
-              {user.firstName} {user.lastName}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-            <div className="flex flex-wrap gap-2">
-              {user.role === "admin" && onAdmin ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1"
-                  onClick={onAdmin}
+            <div className="flex items-start gap-2">
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className="truncate text-sm font-medium text-foreground">
+                  {user.firstName} {user.lastName}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {user.email}
+                </p>
+              </div>
+              {onLogout || onDeleteAccount ? (
+                <Popover
+                  open={accountMenuOpen}
+                  onOpenChange={setAccountMenuOpen}
                 >
-                  <Shield className="h-3.5 w-3.5" />
-                  Admin
-                </Button>
-              ) : null}
-              {onLogout ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1"
-                  onClick={onLogout}
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                  Deconnexion
-                </Button>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                      title="Compte"
+                      aria-label="Ouvrir le menu compte"
+                    >
+                      <ChevronDown
+                        className={cn(
+                          "h-4 w-4 transition-transform duration-200",
+                          accountMenuOpen && "rotate-180",
+                        )}
+                      />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="end"
+                    side="top"
+                    sideOffset={8}
+                    className="w-52 p-2"
+                  >
+                    <div className="flex flex-col gap-1">
+                      {onLogout ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 w-full justify-start"
+                          onClick={() => {
+                            setAccountMenuOpen(false);
+                            void onLogout();
+                          }}
+                        >
+                          Deconnexion
+                        </Button>
+                      ) : null}
+                      {onDeleteAccount ? (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="h-9 w-full justify-start"
+                          onClick={() => {
+                            setAccountMenuOpen(false);
+                            void onDeleteAccount();
+                          }}
+                        >
+                          Supprimer compte
+                        </Button>
+                      ) : null}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               ) : null}
             </div>
+            {user.role === "admin" && onAdmin ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 w-full gap-1"
+                onClick={onAdmin}
+              >
+                <Shield className="h-3.5 w-3.5" />
+                Admin
+              </Button>
+            ) : null}
           </div>
         ) : null}
       </div>

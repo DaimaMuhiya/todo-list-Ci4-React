@@ -200,6 +200,42 @@ class Auth extends BaseController
     }
 
     /**
+     * DELETE /api/auth/account — supprime l’utilisateur connecté et toutes ses données.
+     */
+    public function deleteAccount(): ResponseInterface
+    {
+        $uid = CurrentUser::id();
+
+        if ($uid === null) {
+            return $this->response->setStatusCode(401)->setJSON(['error' => 'Non authentifié.']);
+        }
+
+        $db = $this->db;
+        $db->transStart();
+
+        $db->table('auth_magic_links')->where('user_id', $uid)->delete();
+        $db->table('todos')->where('user_id', $uid)->delete();
+        $db->table('board_sections')->where('user_id', $uid)->delete();
+
+        if (model(UserModel::class)->delete($uid) === false) {
+            $db->transRollback();
+
+            return $this->response->setStatusCode(500)->setJSON(['error' => 'Suppression du compte impossible.']);
+        }
+
+        $db->transComplete();
+
+        if (! $db->transStatus()) {
+            return $this->response->setStatusCode(500)->setJSON(['error' => 'Suppression du compte impossible.']);
+        }
+
+        $cfg      = config('Auth');
+        $response = $this->response->setJSON(['ok' => true]);
+
+        return $response->deleteCookie($cfg->cookieName);
+    }
+
+    /**
      * GET /api/auth/me
      */
     public function me(): ResponseInterface

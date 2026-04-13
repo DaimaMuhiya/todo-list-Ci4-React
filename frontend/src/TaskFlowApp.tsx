@@ -4,6 +4,14 @@ import type { Todo, Category, BoardSection } from "@/lib/types";
 import { TodoSidebar } from "@/components/todo/sidebar";
 import { TaskList } from "@/components/todo/task-list";
 import { TaskForm } from "@/components/todo/task-form";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/toaster";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -18,7 +26,7 @@ import {
   createSection,
   deleteSection,
 } from "@/lib/sections-api";
-import { logout } from "@/lib/auth-api";
+import { deleteAccount, logout } from "@/lib/auth-api";
 import { clearStoredAccessToken } from "@/lib/auth-token-storage";
 import { useAuth } from "@/auth/AuthContext";
 
@@ -40,6 +48,8 @@ export default function TaskFlowApp() {
   >("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Todo | null>(null);
+  const [deleteAccountDialogOpen, setDeleteAccountDialogOpen] = useState(false);
+  const [deleteAccountBusy, setDeleteAccountBusy] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     try {
       const v = localStorage.getItem(SIDEBAR_STORAGE_KEY);
@@ -308,6 +318,36 @@ export default function TaskFlowApp() {
     toast({ title: "Deconnexion", description: "A bientot." });
   };
 
+  const openDeleteAccountDialog = () => {
+    setDeleteAccountDialogOpen(true);
+  };
+
+  const confirmDeleteAccount = async () => {
+    setDeleteAccountBusy(true);
+    try {
+      await deleteAccount();
+      setDeleteAccountDialogOpen(false);
+      setUser(null);
+      setTasks([]);
+      setSections([]);
+      navigate("/login", { replace: true });
+      toast({
+        title: "Compte supprime",
+        description: "Vos donnees ont ete effacees.",
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Suppression impossible.";
+      toast({
+        title: "Compte",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteAccountBusy(false);
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <div
@@ -324,6 +364,7 @@ export default function TaskFlowApp() {
           onCollapse={() => setSidebarOpen(false)}
           user={user}
           onLogout={handleLogout}
+          onDeleteAccount={openDeleteAccountDialog}
           onAdmin={() => navigate("/admin")}
         />
       </div>
@@ -355,6 +396,44 @@ export default function TaskFlowApp() {
         onSubmit={handleSubmit}
         editTask={editingTask}
       />
+
+      <Dialog
+        open={deleteAccountDialogOpen}
+        onOpenChange={(open) => {
+          if (!deleteAccountBusy) {
+            setDeleteAccountDialogOpen(open);
+          }
+        }}
+      >
+        <DialogContent showCloseButton={!deleteAccountBusy} className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Supprimer votre compte ?</DialogTitle>
+            <DialogDescription>
+              Toutes vos taches, sections et donnees associees seront effacees
+              de facon permanente. Cette action est irreversible.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deleteAccountBusy}
+              onClick={() => setDeleteAccountDialogOpen(false)}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteAccountBusy}
+              onClick={() => void confirmDeleteAccount()}
+            >
+              {deleteAccountBusy ? "Suppression…" : "Supprimer definitivement"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Toaster />
     </div>
   );
