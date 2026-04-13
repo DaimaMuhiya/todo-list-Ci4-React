@@ -7,6 +7,36 @@ use DateTimeInterface;
 
 class Cookie extends BaseConfig
 {
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Cross-origin SPA (ex. Vercel) + API (ex. Render) : le navigateur n’envoie
+        // les cookies qu’avec SameSite=None et Secure=true sur les requêtes fetch.
+        // Définir dans l’environnement Render (ou .env prod) :
+        //   cookie.samesite = None
+        //   cookie.secure = true
+        $ss = env('cookie.samesite');
+        if ($ss !== null && $ss !== '') {
+            $norm = strtolower(trim((string) $ss));
+            $this->samesite = match ($norm) {
+                'none'   => 'None',
+                'strict' => 'Strict',
+                'lax'    => 'Lax',
+                default  => $this->samesite,
+            };
+        }
+
+        $sec = env('cookie.secure');
+        if ($sec !== null && $sec !== '') {
+            $this->secure = filter_var($sec, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if ($this->samesite === 'None' && ! $this->secure) {
+            $this->secure = true;
+        }
+    }
+
     /**
      * --------------------------------------------------------------------------
      * Cookie Prefix
