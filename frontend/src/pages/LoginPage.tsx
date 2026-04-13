@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { login } from "@/lib/auth-api";
 import { useAuth } from "@/auth/AuthContext";
+import { apiUrl } from "@/lib/api-fetch";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -14,6 +15,24 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { setUser, user, loading } = useAuth();
+  const magicToken = searchParams.get("token")?.trim() ?? "";
+
+  useEffect(() => {
+    if (!magicToken) {
+      return;
+    }
+    window.location.replace(
+      apiUrl("/api/auth/magic?token=" + encodeURIComponent(magicToken)),
+    );
+  }, [magicToken]);
+
+  if (magicToken) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
+        <p className="text-sm text-muted-foreground">Connexion en cours…</p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

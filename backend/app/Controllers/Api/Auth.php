@@ -246,19 +246,19 @@ class Auth extends BaseController
             return;
         }
 
-        $magicUrl = site_url('api/auth/magic?token=' . rawurlencode($rawMagicToken));
         $loginUrl = rtrim(config('Auth')->frontendBaseUrl, '/') . '/login';
+        // Lien public = page /login du frontend uniquement (le token est consommé via redirection vers l’API).
+        $quickLoginUrl = $loginUrl . '?token=' . rawurlencode($rawMagicToken);
 
         $body = <<<TXT
 Bonjour {$firstName},
 
 Votre compte Taskflow a bien ete cree.
 
-Connexion rapide (lien valable 48 h, usage unique) :
-{$magicUrl}
+Connexion rapide sans mot de passe (lien valable 48 h, usage unique) :
+{$quickLoginUrl}
 
-Vous pouvez aussi vous connecter avec votre e-mail et le mot de passe choisi :
-{$loginUrl}
+Sur cette meme page, vous pouvez aussi vous connecter avec votre e-mail et le mot de passe choisi.
 
 Cordialement,
 L equipe Taskflow
