@@ -128,6 +128,25 @@ class Email extends BaseConfig
     {
         parent::__construct();
 
+        if ($this->fromEmail === '') {
+            $v = env('email.fromEmail');
+            if (\is_string($v) && $v !== '') {
+                $this->fromEmail = $v;
+            }
+        }
+
+        if ($this->fromName === '') {
+            $v = env('email.fromName');
+            if (\is_string($v) && $v !== '') {
+                $this->fromName = $v;
+            }
+        }
+
+        $proto = env('email.protocol');
+        if (\is_string($proto) && $proto !== '') {
+            $this->protocol = $proto;
+        }
+
         // Le .env utilise souvent email.smtpHost (minuscules) ; les propriétés CI4 sont SMTPHost, etc.
         if ($this->SMTPHost === '') {
             $v = env('email.smtpHost');
@@ -153,6 +172,19 @@ class Email extends BaseConfig
         $p = env('email.smtpPort');
         if ($p !== null && $p !== false && $p !== '' && $this->SMTPPort === 25) {
             $this->SMTPPort = (int) $p;
+        }
+
+        $crypto = env('email.smtpCrypto');
+        if ($crypto === false || $crypto === null || $crypto === '') {
+            $crypto = env('email.SMTPCrypto');
+        }
+        if (\is_string($crypto) && $crypto !== '') {
+            $this->SMTPCrypto = $crypto;
+        }
+
+        // Sur les PaaS, « mail » ne fonctionne pas : si un SMTP est configure, utiliser smtp.
+        if ($this->SMTPHost !== '' && $this->protocol === 'mail') {
+            $this->protocol = 'smtp';
         }
     }
 }
