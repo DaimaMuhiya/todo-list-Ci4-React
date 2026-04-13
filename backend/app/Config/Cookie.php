@@ -11,14 +11,29 @@ class Cookie extends BaseConfig
     {
         parent::__construct();
 
-        // Cross-origin SPA (ex. Vercel) + API (ex. Render) : le navigateur n’envoie
-        // les cookies qu’avec SameSite=None et Secure=true sur les requêtes fetch.
-        // Définir dans l’environnement Render (ou .env prod) :
-        //   cookie.samesite = None
-        //   cookie.secure = true
-        $ss = env('cookie.samesite');
+        // Cross-origin SPA (ex. Vercel) + API (ex. Render) : sans SameSite=None
+        // + Secure, le navigateur n’envoie pas le cookie sur fetch(credentials).
+        //
+        // Défaut « cross-site » : Vercel + API Render (cookie envoyé sur fetch vers Onrender).
+        // - CI_ENVIRONMENT=production, ou
+        // - variable RENDER (hébergement Render), au cas où CI_ENVIRONMENT serait oublié.
+        $onRenderHost = in_array(
+            strtolower((string) getenv('RENDER')),
+            ['1', 'true', 'yes'],
+            true,
+        );
+        if (ENVIRONMENT === 'production' || $onRenderHost) {
+            $this->samesite = 'None';
+            $this->secure   = true;
+        }
+
+        $ss = $this->readEnvString([
+            'cookie.samesite',
+            'cookie_samesite',
+            'COOKIE_SAMESITE',
+        ]);
         if ($ss !== null && $ss !== '') {
-            $norm = strtolower(trim((string) $ss));
+            $norm = strtolower(trim($ss));
             $this->samesite = match ($norm) {
                 'none'   => 'None',
                 'strict' => 'Strict',
@@ -27,7 +42,7 @@ class Cookie extends BaseConfig
             };
         }
 
-        $sec = env('cookie.secure');
+        $sec = $this->readEnvString(['cookie.secure', 'cookie_secure', 'COOKIE_SECURE']);
         if ($sec !== null && $sec !== '') {
             $this->secure = filter_var($sec, FILTER_VALIDATE_BOOLEAN);
         }
@@ -35,6 +50,25 @@ class Cookie extends BaseConfig
         if ($this->samesite === 'None' && ! $this->secure) {
             $this->secure = true;
         }
+    }
+
+    /**
+     * @param list<string> $keys
+     */
+    private function readEnvString(array $keys): ?string
+    {
+        foreach ($keys as $key) {
+            $v = env($key);
+            if ($v !== null && $v !== false && $v !== '') {
+                return (string) $v;
+            }
+            $g = getenv($key);
+            if ($g !== false && $g !== '') {
+                return (string) $g;
+            }
+        }
+
+        return null;
     }
 
     /**
