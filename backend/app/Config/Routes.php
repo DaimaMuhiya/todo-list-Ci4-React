@@ -22,6 +22,9 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
             'auth/account',
             'auth/me',
             'auth/magic',
+            'auth/password-reset/request',
+            'auth/password-reset/confirm',
+            'auth/password-reset/complete',
             'admin/users',
             'admin/users/(:num)',
         ] as $pattern
@@ -32,6 +35,9 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     $routes->post('auth/register', 'Auth::register');
     $routes->post('auth/login', 'Auth::login');
     $routes->get('auth/magic', 'Auth::magic');
+    $routes->post('auth/password-reset/request', 'Auth::passwordResetRequest');
+    $routes->post('auth/password-reset/confirm', 'Auth::passwordResetConfirm');
+    $routes->post('auth/password-reset/complete', 'Auth::passwordResetComplete');
 
     $routes->group('', ['filter' => 'jwtauth'], static function ($routes) {
         $routes->post('auth/logout', 'Auth::logout');

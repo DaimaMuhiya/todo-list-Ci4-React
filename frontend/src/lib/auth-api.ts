@@ -95,3 +95,52 @@ export async function register(
   if (!res.ok) await handleNotOkResponse(res);
   return res.json() as Promise<{ user: User; message: string }>;
 }
+
+export interface PasswordResetRequestPayload {
+  lastName: string;
+  firstName: string;
+  email: string;
+}
+
+export async function passwordResetRequest(
+  payload: PasswordResetRequestPayload,
+): Promise<{ message: string }> {
+  const res = await apiFetch("/api/auth/password-reset/request", {
+    method: "POST",
+    body: JSON.stringify({
+      lastName: payload.lastName,
+      firstName: payload.firstName,
+      email: payload.email,
+    }),
+  });
+  if (!res.ok) await handleNotOkResponse(res);
+  return res.json() as Promise<{ message: string }>;
+}
+
+export async function passwordResetConfirm(
+  token: string,
+): Promise<{ completionToken: string }> {
+  const res = await apiFetch("/api/auth/password-reset/confirm", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+  if (!res.ok) await handleNotOkResponse(res);
+  return res.json() as Promise<{ completionToken: string }>;
+}
+
+export async function passwordResetComplete(payload: {
+  completionToken: string;
+  password: string;
+  passwordConfirm: string;
+}): Promise<{ ok: boolean; message: string }> {
+  const res = await apiFetch("/api/auth/password-reset/complete", {
+    method: "POST",
+    body: JSON.stringify({
+      completionToken: payload.completionToken,
+      password: payload.password,
+      passwordConfirm: payload.passwordConfirm,
+    }),
+  });
+  if (!res.ok) await handleNotOkResponse(res);
+  return res.json() as Promise<{ ok: boolean; message: string }>;
+}
