@@ -15,6 +15,7 @@ import {
   fetchAdminUsers,
   updateUserRole,
 } from "@/lib/admin-api";
+import { logout } from "@/lib/auth-api";
 import { useAuth } from "@/auth/AuthContext";
 import { ArrowLeft, Trash2 } from "lucide-react";
 
