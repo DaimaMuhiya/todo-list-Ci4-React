@@ -480,9 +480,9 @@ class Auth extends BaseController
         );
     }
 
-    protected function sendWelcomeEmail(string $toEmail, string $firstName, string $rawMagicToken): void
+       protected function sendWelcomeEmail(string $toEmail, string $firstName, string $rawMagicToken): void
     {
-        $email = Services::email();
+        $email = Services::email(null, false);
         $from  = config('Email')->fromEmail;
         $name  = config('Email')->fromName;
 
@@ -522,7 +522,7 @@ TXT;
 
     protected function sendPasswordResetRequestEmail(string $toEmail, string $firstName, string $rawRequestToken): void
     {
-        $emailService = Services::email();
+        $emailService = Services::email(null, false);
         $from         = config('Email')->fromEmail;
         $name         = config('Email')->fromName;
 

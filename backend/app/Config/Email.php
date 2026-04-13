@@ -129,62 +129,118 @@ class Email extends BaseConfig
         parent::__construct();
 
         if ($this->fromEmail === '') {
-            $v = env('email.fromEmail');
-            if (\is_string($v) && $v !== '') {
-                $this->fromEmail = $v;
-            }
+            $this->fromEmail = self::envAny(
+                'email.fromEmail',
+                'MAIL_FROM_ADDRESS',
+                'MAIL_FROM',
+            );
         }
 
         if ($this->fromName === '') {
-            $v = env('email.fromName');
-            if (\is_string($v) && $v !== '') {
-                $this->fromName = $v;
+            $this->fromName = self::envAny(
+                'email.fromName',
+                'MAIL_FROM_NAME',
+            );
+        }
+
+        $proto = self::envAny('email.protocol', 'MAIL_MAILER');
+        if ($proto !== '') {
+            $p = strtolower($proto);
+            if ($p === 'smtp' || $p === 'mail' || $p === 'sendmail') {
+                $this->protocol = $p;
             }
         }
 
-        $proto = env('email.protocol');
-        if (\is_string($proto) && $proto !== '') {
-            $this->protocol = $proto;
-        }
-
-        // Le .env utilise souvent email.smtpHost (minuscules) ; les propriétés CI4 sont SMTPHost, etc.
         if ($this->SMTPHost === '') {
-            $v = env('email.smtpHost');
-            if (\is_string($v) && $v !== '') {
-                $this->SMTPHost = $v;
-            }
+            $this->SMTPHost = self::envAny(
+                'email.smtpHost',
+                'MAIL_HOST',
+                'SMTP_HOST',
+            );
         }
 
         if ($this->SMTPUser === '') {
-            $v = env('email.smtpUser');
-            if (\is_string($v) && $v !== '') {
-                $this->SMTPUser = $v;
-            }
+            $this->SMTPUser = trim(self::envAny(
+                'email.smtpUser',
+                'MAIL_USERNAME',
+                'SMTP_USER',
+            ));
         }
 
         if ($this->SMTPPass === '') {
-            $v = env('email.smtpPass');
-            if (\is_string($v) && $v !== '') {
-                $this->SMTPPass = $v;
+            $raw = self::envAny(
+                'email.smtpPass',
+                'MAIL_PASSWORD',
+                'SMTP_PASS',
+            );
+            if ($raw !== '') {
+                $this->SMTPPass = self::normalizeSmtpPassword($raw);
             }
         }
 
-        $p = env('email.smtpPort');
-        if ($p !== null && $p !== false && $p !== '' && $this->SMTPPort === 25) {
-            $this->SMTPPort = (int) $p;
+        $portRaw = env('email.smtpPort');
+        if ($portRaw === null || $portRaw === false || $portRaw === '') {
+            $portRaw = env('MAIL_PORT');
+        }
+        if ($portRaw !== null && $portRaw !== false && (string) $portRaw !== '') {
+            $this->SMTPPort = (int) $portRaw;
         }
 
-        $crypto = env('email.smtpCrypto');
-        if ($crypto === false || $crypto === null || $crypto === '') {
-            $crypto = env('email.SMTPCrypto');
+        $crypto = self::envAny('email.smtpCrypto', 'email.SMTPCrypto', 'MAIL_ENCRYPTION');
+        if ($crypto !== '') {
+            $this->SMTPCrypto = strtolower($crypto) === 'ssl' ? 'ssl' : $crypto;
         }
-        if (\is_string($crypto) && $crypto !== '') {
-            $this->SMTPCrypto = $crypto;
+
+        $timeoutRaw = env('email.smtpTimeout');
+        if ($timeoutRaw === null || $timeoutRaw === false || $timeoutRaw === '') {
+            $timeoutRaw = env('MAIL_TIMEOUT');
+        }
+        if ($timeoutRaw !== null && $timeoutRaw !== false && (string) $timeoutRaw !== '') {
+            $this->SMTPTimeout = max(5, (int) $timeoutRaw);
         }
 
         // Sur les PaaS, « mail » ne fonctionne pas : si un SMTP est configure, utiliser smtp.
         if ($this->SMTPHost !== '' && $this->protocol === 'mail') {
             $this->protocol = 'smtp';
         }
+
+        // Connexion SMTP depuis un hebergeur (Render, etc.) : delai court = echecs frequents.
+        if ($this->protocol === 'smtp' && $this->SMTPHost !== '' && $this->SMTPTimeout < 20) {
+            $this->SMTPTimeout = 30;
+        }
+    }
+
+    /**
+     * @param list<string> $keys Cles CodeIgniter (.env) ou style Laravel / PaaS (MAIL_*)
+     */
+    private static function envAny(string ...$keys): string
+    {
+        foreach ($keys as $key) {
+            $v = env($key);
+            if (\is_string($v)) {
+                $t = trim($v);
+                if ($t !== '') {
+                    return $t;
+                }
+            }
+        }
+
+        return '';
+    }
+
+    private static function normalizeSmtpPassword(string $pass): string
+    {
+        $s = trim($pass);
+        if ($s !== '' && strlen($s) >= 2) {
+            $first = $s[0];
+            $last  = $s[strlen($s) - 1];
+            if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
+                $s = substr($s, 1, -1);
+            }
+        }
+
+        $collapsed = preg_replace('/\s+/u', '', $s);
+
+        return $collapsed ?? $s;
     }
 }
