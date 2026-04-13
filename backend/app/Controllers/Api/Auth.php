@@ -128,11 +128,14 @@ class Auth extends BaseController
             return $this->response->setStatusCode(401)->setJSON(['error' => 'Identifiants incorrects.']);
         }
 
+        $jwt = $this->mintJwt((int) $user['id'], (string) $user['role']);
+
         $response = $this->response->setJSON([
-            'user' => $userModel->serializePublic($user),
+            'user'         => $userModel->serializePublic($user),
+            'accessToken'  => $jwt,
         ]);
 
-        return $this->attachAuthCookie($response, (int) $user['id'], (string) $user['role']);
+        return $this->applyAuthCookie($response, $jwt);
     }
 
     /**
@@ -177,10 +180,12 @@ class Auth extends BaseController
 
         $model->update((int) $row['id'], ['used_at' => date('Y-m-d H:i:s')]);
 
-        $okUrl = $frontend . '/?connexion=1';
+        $jwt = $this->mintJwt($userId, (string) $user['role']);
+        $base = rtrim($frontend, '/');
+        $okUrl = $base . '/?connexion=1&accessToken=' . rawurlencode($jwt);
         $response = $this->response->redirect($okUrl);
 
-        return $this->attachAuthCookie($response, $userId, (string) $user['role']);
+        return $this->applyAuthCookie($response, $jwt);
     }
 
     /**
@@ -214,11 +219,19 @@ class Auth extends BaseController
         return $this->response->setJSON(model(UserModel::class)->serializePublic($user));
     }
 
-    protected function attachAuthCookie(ResponseInterface $response, int $userId, string $role): ResponseInterface
+    protected function mintJwt(int $userId, string $role): string
     {
         $cfg = config('Auth');
-        $jwt = AuthToken::mint($userId, $role, $cfg->jwtSecret, $cfg->jwtTtlSeconds);
 
+        return AuthToken::mint($userId, $role, $cfg->jwtSecret, $cfg->jwtTtlSeconds);
+    }
+
+    /**
+     * Cookie HttpOnly (même origine / navigateurs permissifs) + Bearer pour SPA cross-origin.
+     */
+    protected function applyAuthCookie(ResponseInterface $response, string $jwt): ResponseInterface
+    {
+        $cfg    = config('Auth');
         $cookie = config('Cookie');
 
         return $response->setCookie(

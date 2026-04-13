@@ -18,6 +18,13 @@ class JwtAuth implements FilterInterface
         $rawToken = $request->getCookie($config->cookieName);
 
         if ($rawToken === null || $rawToken === '') {
+            $authHeader = $request->getHeaderLine('Authorization');
+            if (preg_match('/^\s*Bearer\s+(\S+)/i', $authHeader, $m) === 1) {
+                $rawToken = $m[1];
+            }
+        }
+
+        if ($rawToken === null || $rawToken === '') {
             return service('response')->setStatusCode(401)->setJSON(['error' => 'Authentification requise.']);
         }
 

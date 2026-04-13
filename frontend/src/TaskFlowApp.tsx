@@ -19,6 +19,7 @@ import {
   deleteSection,
 } from "@/lib/sections-api";
 import { logout } from "@/lib/auth-api";
+import { clearStoredAccessToken } from "@/lib/auth-token-storage";
 import { useAuth } from "@/auth/AuthContext";
 
 const SIDEBAR_STORAGE_KEY = "taskflow-sidebar-open";
@@ -91,6 +92,7 @@ export default function TaskFlowApp() {
               message.includes("Session invalide"))
           ) {
             setUser(null);
+            clearStoredAccessToken();
             navigate("/login", { replace: true });
             return;
           }

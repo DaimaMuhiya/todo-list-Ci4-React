@@ -1,5 +1,9 @@
 import type { User } from "@/lib/types";
 import { apiFetch } from "@/lib/api-fetch";
+import {
+  clearStoredAccessToken,
+  setStoredAccessToken,
+} from "@/lib/auth-token-storage";
 
 const API_ERROR_BODY_MAX = 4000;
 
@@ -47,13 +51,20 @@ export async function login(email: string, password: string): Promise<User> {
     body: JSON.stringify({ email, password }),
   });
   if (!res.ok) await handleNotOkResponse(res);
-  const body = (await res.json()) as { user: User };
+  const body = (await res.json()) as { user: User; accessToken?: string };
+  if (body.accessToken) {
+    setStoredAccessToken(body.accessToken);
+  }
   return body.user;
 }
 
 export async function logout(): Promise<void> {
-  const res = await apiFetch("/api/auth/logout", { method: "POST" });
-  if (!res.ok) await handleNotOkResponse(res);
+  try {
+    const res = await apiFetch("/api/auth/logout", { method: "POST" });
+    if (!res.ok) await handleNotOkResponse(res);
+  } finally {
+    clearStoredAccessToken();
+  }
 }
 
 export interface RegisterPayload {

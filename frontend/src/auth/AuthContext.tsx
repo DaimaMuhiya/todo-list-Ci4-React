@@ -8,6 +8,7 @@ import {
 } from "react";
 import type { User } from "@/lib/types";
 import { fetchMe } from "@/lib/auth-api";
+import { clearStoredAccessToken } from "@/lib/auth-token-storage";
 
 export type AuthContextValue = {
   user: User | null;
@@ -28,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(me);
     } catch {
       setUser(null);
+      clearStoredAccessToken();
     } finally {
       setLoading(false);
     }
