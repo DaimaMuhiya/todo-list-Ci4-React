@@ -17,7 +17,6 @@ import {
   ListTodo,
   PanelLeftOpen,
   Plus,
-  LayoutGrid,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,7 +36,27 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+
+function BoardColumnSkeleton() {
+  return (
+    <section
+      className="flex w-[min(100vw-3rem,18rem)] shrink-0 flex-col rounded-xl border border-border bg-muted/20"
+      aria-hidden
+    >
+      <div className="space-y-2 border-b border-border px-3 py-2.5">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-3 w-20" />
+      </div>
+      <div className="space-y-2 p-2">
+        <Skeleton className="h-20 w-full rounded-lg" />
+        <Skeleton className="h-24 w-full rounded-lg" />
+        <Skeleton className="h-16 w-full rounded-lg" />
+      </div>
+    </section>
+  );
+}
 
 const categoryLabels: Record<Category | "all", string> = {
   all: "Toutes les taches",
@@ -62,6 +81,8 @@ interface TaskListProps {
   onAddSection: (name: string) => void | Promise<void>;
   onDeleteSection: (sectionId: string) => void | Promise<void>;
   onAddTask: () => void;
+  /** Tâches / sections API en cours de chargement. */
+  loading?: boolean;
   /** Si défini, affiche le bouton pour rouvrir la barre latérale à gauche du titre. */
   onExpandSidebar?: () => void;
 }
@@ -81,6 +102,7 @@ export function TaskList({
   onAddSection,
   onDeleteSection,
   onAddTask,
+  loading = false,
   onExpandSidebar,
 }: TaskListProps) {
   const [addSectionOpen, setAddSectionOpen] = useState(false);
@@ -161,72 +183,93 @@ export function TaskList({
               <PanelLeftOpen className="h-4 w-4" />
             </Button>
           ) : null}
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-2xl font-bold text-foreground">
-                {categoryLabels[selectedCategory]}
-              </h2>
-              {/* <span className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground">
-                <LayoutGrid className="h-3.5 w-3.5" />
-                Tableau
-              </span> */}
+          {loading ? (
+            <div className="min-w-0 flex-1 space-y-2 pt-0.5">
+              <Skeleton className="h-8 w-64 max-w-full" />
+              <Skeleton className="h-4 w-72 max-w-full" />
             </div>
-            <p className="text-sm text-muted-foreground">
-              {tasks.length} tache{tasks.length !== 1 ? "s" : ""} — glissez les
-              taches entre les colonnes
-            </p>
-          </div>
+          ) : (
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-2xl font-bold text-foreground">
+                  {categoryLabels[selectedCategory]}
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {tasks.length} tache{tasks.length !== 1 ? "s" : ""} — glissez
+                les taches entre les colonnes
+              </p>
+            </div>
+          )}
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <div className="relative min-w-48 flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher une tache..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="bg-secondary pl-10"
-            />
+        {loading ? (
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Skeleton className="h-10 min-w-48 flex-1" />
+            <Skeleton className="h-10 w-40" />
+            <Skeleton className="h-10 w-44" />
+            <Skeleton className="h-10 w-36" />
           </div>
+        ) : (
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="relative min-w-48 flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher une tache..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="bg-secondary pl-10"
+              />
+            </div>
 
-          <Select
-            value={filterStatus}
-            onValueChange={(v) => onFilterChange(v as typeof filterStatus)}
-          >
-            <SelectTrigger className="w-40 bg-secondary">
-              <Filter className="mr-2 h-4 w-4" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes</SelectItem>
-              <SelectItem value="pending">En attente</SelectItem>
-              <SelectItem value="completed">Terminees</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select
+              value={filterStatus}
+              onValueChange={(v) => onFilterChange(v as typeof filterStatus)}
+            >
+              <SelectTrigger className="w-40 bg-secondary">
+                <Filter className="mr-2 h-4 w-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes</SelectItem>
+                <SelectItem value="pending">En attente</SelectItem>
+                <SelectItem value="completed">Terminees</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Button
-            type="button"
-            variant="outline"
-            className="shrink-0 gap-1 shadow-sm"
-            onClick={() => setAddSectionOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Ajouter une section
-          </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="shrink-0 gap-1 shadow-sm"
+              onClick={() => setAddSectionOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Ajouter une section
+            </Button>
 
-          <Button
-            type="button"
-            className="shrink-0 gap-2 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
-            onClick={onAddTask}
-          >
-            <Plus className="h-4 w-4" />
-            Nouvelle tache
-          </Button>
-        </div>
+            <Button
+              type="button"
+              className="shrink-0 gap-2 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+              onClick={onAddTask}
+            >
+              <Plus className="h-4 w-4" />
+              Nouvelle tache
+            </Button>
+          </div>
+        )}
       </header>
 
       <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden p-6">
-        {sections.length === 0 ? (
+        {loading ? (
+          <div
+            className="flex h-full min-h-[min(100%,28rem)] gap-4 pb-2"
+            aria-label="Chargement du tableau"
+          >
+            <BoardColumnSkeleton />
+            <BoardColumnSkeleton />
+            <BoardColumnSkeleton />
+          </div>
+        ) : sections.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
             Chargement des colonnes…
           </div>

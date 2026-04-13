@@ -4,16 +4,13 @@ import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import AdminPage from "@/pages/AdminPage";
 import TaskFlowApp from "@/TaskFlowApp";
+import { ProtectedRouteSkeleton } from "@/components/layout/protected-route-skeleton";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center text-muted-foreground">
-        Chargement…
-      </div>
-    );
+    return <ProtectedRouteSkeleton />;
   }
 
   if (!user) {
@@ -27,11 +24,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center text-muted-foreground">
-        Chargement…
-      </div>
-    );
+    return <ProtectedRouteSkeleton />;
   }
 
   if (!user) {

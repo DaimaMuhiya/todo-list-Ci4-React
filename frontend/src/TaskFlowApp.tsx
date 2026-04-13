@@ -5,9 +5,7 @@ import { TodoSidebar } from "@/components/todo/sidebar";
 import { TaskList } from "@/components/todo/task-list";
 import { TaskForm } from "@/components/todo/task-form";
 import { Toaster } from "@/components/ui/toaster";
-import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   fetchTodos,
@@ -320,6 +318,7 @@ export default function TaskFlowApp() {
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
           stats={stats}
+          statsLoading={loading}
           onCollapse={() => setSidebarOpen(false)}
           user={user}
           onLogout={handleLogout}
@@ -328,52 +327,24 @@ export default function TaskFlowApp() {
       </div>
 
       <main className="min-h-0 flex-1 overflow-hidden">
-        {loading ? (
-          !sidebarOpen ? (
-            <div className="flex h-full flex-col">
-              <div className="flex items-start gap-3 border-b border-border p-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="mt-1 shrink-0 shadow-sm"
-                  onClick={() => setSidebarOpen(true)}
-                  title="Afficher le panneau"
-                  aria-label="Afficher le panneau lateral"
-                >
-                  <PanelLeftOpen className="h-4 w-4" />
-                </Button>
-                <p className="min-w-0 flex-1 pt-2 text-sm text-muted-foreground">
-                  Chargement des taches…
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex h-full items-center justify-center text-muted-foreground">
-              Chargement des taches…
-            </div>
-          )
-        ) : (
-          <TaskList
-            tasks={filteredTasks}
-            sections={sections}
-            selectedCategory={selectedCategory}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            filterStatus={filterStatus}
-            onFilterChange={setFilterStatus}
-            onToggle={handleToggle}
-            onDelete={handleDelete}
-            onEdit={handleEdit}
-            onTaskMove={handleTaskMove}
-            onAddSection={handleAddSection}
-            onDeleteSection={handleDeleteSection}
-            onAddTask={() => setIsFormOpen(true)}
-            onExpandSidebar={
-              sidebarOpen ? undefined : () => setSidebarOpen(true)
-            }
-          />
-        )}
+        <TaskList
+          tasks={loading ? [] : filteredTasks}
+          sections={loading ? [] : sections}
+          selectedCategory={selectedCategory}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          filterStatus={filterStatus}
+          onFilterChange={setFilterStatus}
+          onToggle={handleToggle}
+          onDelete={handleDelete}
+          onEdit={handleEdit}
+          onTaskMove={handleTaskMove}
+          onAddSection={handleAddSection}
+          onDeleteSection={handleDeleteSection}
+          onAddTask={() => setIsFormOpen(true)}
+          loading={loading}
+          onExpandSidebar={sidebarOpen ? undefined : () => setSidebarOpen(true)}
+        />
       </main>
 
       <TaskForm

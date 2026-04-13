@@ -14,6 +14,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const categories: CategoryInfo[] = [
   { id: "work", label: "Travail", icon: "briefcase", color: "text-blue-400" },
@@ -42,6 +43,8 @@ interface SidebarProps {
     completed: number;
     pending: number;
   };
+  /** Compteurs issus des tâches API — squelette tant que `true`. */
+  statsLoading?: boolean;
   onCollapse?: () => void;
   user?: User | null;
   onLogout?: () => void;
@@ -52,6 +55,7 @@ export function TodoSidebar({
   selectedCategory,
   onSelectCategory,
   stats,
+  statsLoading = false,
   onCollapse,
   user,
   onLogout,
@@ -125,20 +129,29 @@ export function TodoSidebar({
           Statistiques
         </p>
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg bg-secondary p-3">
-            <div className="flex items-center gap-2 text-emerald-400">
-              <CheckCircle2 className="h-4 w-4" />
-              <span className="text-lg font-semibold">{stats.completed}</span>
-            </div>
-            <p className="text-xs text-muted-foreground">Terminees</p>
-          </div>
-          <div className="rounded-lg bg-secondary p-3">
-            <div className="flex items-center gap-2 text-amber-400">
-              <Clock className="h-4 w-4" />
-              <span className="text-lg font-semibold">{stats.pending}</span>
-            </div>
-            <p className="text-xs text-muted-foreground">En attente</p>
-          </div>
+          {statsLoading ? (
+            <>
+              <Skeleton className="h-17 rounded-lg" />
+              <Skeleton className="h-17 rounded-lg" />
+            </>
+          ) : (
+            <>
+              <div className="rounded-lg bg-secondary p-3">
+                <div className="flex items-center gap-2 text-emerald-400">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="text-lg font-semibold">{stats.completed}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Terminees</p>
+              </div>
+              <div className="rounded-lg bg-secondary p-3">
+                <div className="flex items-center gap-2 text-amber-400">
+                  <Clock className="h-4 w-4" />
+                  <span className="text-lg font-semibold">{stats.pending}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">En attente</p>
+              </div>
+            </>
+          )}
         </div>
 
         {user ? (

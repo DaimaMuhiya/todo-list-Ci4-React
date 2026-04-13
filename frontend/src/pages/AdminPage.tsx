@@ -18,6 +18,7 @@ import {
 import { logout } from "@/lib/auth-api";
 import { useAuth } from "@/auth/AuthContext";
 import { ArrowLeft, Trash2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminPage() {
   const { user: me, setUser } = useAuth();
@@ -115,7 +116,44 @@ export default function AdminPage() {
         </div>
 
         {loading ? (
-          <p className="text-muted-foreground">Chargement…</p>
+          <div
+            className="overflow-x-auto rounded-xl border border-border"
+            aria-busy="true"
+            aria-label="Chargement des utilisateurs"
+          >
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border bg-muted/40">
+                <tr>
+                  <th className="p-3 font-medium">Nom</th>
+                  <th className="p-3 font-medium">E-mail</th>
+                  <th className="p-3 font-medium">Role</th>
+                  <th className="p-3 font-medium">Inscription</th>
+                  <th className="p-3 w-24" />
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 6 }, (_, i) => (
+                  <tr key={i} className="border-b border-border last:border-0">
+                    <td className="p-3">
+                      <Skeleton className="h-4 w-36" />
+                    </td>
+                    <td className="p-3">
+                      <Skeleton className="h-4 w-48 max-w-full" />
+                    </td>
+                    <td className="p-3">
+                      <Skeleton className="h-9 w-36 rounded-md" />
+                    </td>
+                    <td className="p-3">
+                      <Skeleton className="h-4 w-24" />
+                    </td>
+                    <td className="p-3">
+                      <Skeleton className="mx-auto h-8 w-8 rounded-md" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-left text-sm">
