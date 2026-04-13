@@ -1,11 +1,7 @@
 import type { BoardSection } from "@/lib/types";
+import { apiFetch } from "@/lib/api-fetch";
 
-const API_ORIGIN = (import.meta.env.VITE_API_URL as string | undefined)?.replace(
-  /\/$/,
-  "",
-) ?? "";
-
-const BASE = `${API_ORIGIN}/api/sections`;
+const BASE = "/api/sections";
 
 const API_ERROR_BODY_MAX = 4000;
 
@@ -45,15 +41,14 @@ async function handleNotOkResponse(res: Response): Promise<never> {
 }
 
 export async function fetchSections(): Promise<BoardSection[]> {
-  const res = await fetch(BASE);
+  const res = await apiFetch(BASE);
   if (!res.ok) await handleNotOkResponse(res);
   return res.json() as Promise<BoardSection[]>;
 }
 
 export async function createSection(name: string): Promise<BoardSection> {
-  const res = await fetch(BASE, {
+  const res = await apiFetch(BASE, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
   });
   if (!res.ok) await handleNotOkResponse(res);
@@ -61,6 +56,6 @@ export async function createSection(name: string): Promise<BoardSection> {
 }
 
 export async function deleteSection(id: string): Promise<void> {
-  const res = await fetch(`${BASE}/${id}`, { method: "DELETE" });
+  const res = await apiFetch(`${BASE}/${id}`, { method: "DELETE" });
   if (!res.ok) await handleNotOkResponse(res);
 }

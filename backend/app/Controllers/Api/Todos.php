@@ -3,6 +3,7 @@
 namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
+use App\Libraries\CurrentUser;
 use App\Models\BoardSectionModel;
 use App\Models\TodoModel;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -14,8 +15,13 @@ class Todos extends BaseController
      */
     public function index(): ResponseInterface
     {
+        $uid = CurrentUser::id();
+
         /** @var list<array<string, mixed>> $rows */
-        $rows = model(TodoModel::class)->orderBy('created_at', 'DESC')->findAll();
+        $rows = model(TodoModel::class)
+            ->where('user_id', $uid)
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
 
         return $this->response->setJSON(array_map([$this, 'serialize'], $rows));
     }
@@ -25,7 +31,8 @@ class Todos extends BaseController
      */
     public function show(string $id): ResponseInterface
     {
-        $row = model(TodoModel::class)->find((int) $id);
+        $uid = CurrentUser::id();
+        $row = model(TodoModel::class)->where('user_id', $uid)->find((int) $id);
 
         if ($row === null) {
             return $this->response->setStatusCode(404)->setJSON(['error' => 'Tache introuvable.']);
@@ -46,6 +53,7 @@ class Todos extends BaseController
         }
 
         $row = $this->payloadToRow($payload, false);
+        $row['user_id'] = CurrentUser::id();
         $row = $this->finalizeTodoRow($payload, $row, null, false);
 
         if (! $this->validatePayload($row, true)) {
@@ -70,7 +78,7 @@ class Todos extends BaseController
     public function update(string $id): ResponseInterface
     {
         $model = model(TodoModel::class);
-        $existing = $model->find((int) $id);
+        $existing = $model->where('user_id', CurrentUser::id())->find((int) $id);
 
         if ($existing === null) {
             return $this->response->setStatusCode(404)->setJSON(['error' => 'Tache introuvable.']);
@@ -106,11 +114,11 @@ class Todos extends BaseController
     {
         $model = model(TodoModel::class);
 
-        if ($model->find((int) $id) === null) {
+        if ($model->where('user_id', CurrentUser::id())->find((int) $id) === null) {
             return $this->response->setStatusCode(404)->setJSON(['error' => 'Tache introuvable.']);
         }
 
-        $model->delete((int) $id);
+        $model->where('user_id', CurrentUser::id())->delete((int) $id);
 
         return $this->response->setJSON(['ok' => true]);
     }
@@ -133,7 +141,7 @@ class Todos extends BaseController
             'completed'   => $this->toBool($row['completed'] ?? false),
             'priority'    => $row['priority'],
             'category'    => $row['category'],
-            'sectionId'   => $sectionId !== null && $sectionId !== '' ? (string) $sectionId : (string) $this->getSectionIdBySlug('todo'),
+            'sectionId'   => $sectionId !== null && $sectionId !== '' ? (string) $sectionId : (string) $this->getSectionIdBySlug('todo', (int) ($row['user_id'] ?? 0)),
             'dueDate'     => isset($row['due_date']) && $row['due_date'] !== null && $row['due_date'] !== ''
                 ? $this->formatDate($row['due_date'])
                 : null,
@@ -206,8 +214,11 @@ class Todos extends BaseController
 
         if (isset($data['section_id']) && $data['section_id'] !== null && $data['section_id'] !== '') {
             $sid = (int) $data['section_id'];
+            $uid = (int) ($data['user_id'] ?? CurrentUser::id());
 
-            if (model(BoardSectionModel::class)->find($sid) === null) {
+            $sec = model(BoardSectionModel::class)->where('id', $sid)->where('user_id', $uid)->first();
+
+            if ($sec === null) {
                 $this->validator->setError('section_id', 'Section invalide.');
 
                 return false;
@@ -217,9 +228,9 @@ class Todos extends BaseController
         return true;
     }
 
-    protected function getSectionIdBySlug(string $slug): int
+    protected function getSectionIdBySlug(string $slug, int $userId): int
     {
-        $row = model(BoardSectionModel::class)->select('id')->where('slug', $slug)->first();
+        $row = model(BoardSectionModel::class)->select('id')->where('slug', $slug)->where('user_id', $userId)->first();
 
         return $row !== null ? (int) $row['id'] : 0;
     }
@@ -249,12 +260,14 @@ class Todos extends BaseController
      */
     protected function finalizeTodoRow(array $payload, array $row, ?array $existing, bool $partial): array
     {
+        $scopeUserId = (int) ($row['user_id'] ?? ($existing['user_id'] ?? CurrentUser::id()));
+
         if (! $partial) {
             if (! isset($row['section_id']) || $row['section_id'] === null) {
                 if ($this->toBool($payload['completed'] ?? false)) {
-                    $row['section_id'] = $this->getSectionIdBySlug('done');
+                    $row['section_id'] = $this->getSectionIdBySlug('done', $scopeUserId);
                 } else {
-                    $row['section_id'] = $this->getSectionIdBySlug('todo');
+                    $row['section_id'] = $this->getSectionIdBySlug('todo', $scopeUserId);
                 }
             }
 
@@ -264,14 +277,15 @@ class Todos extends BaseController
         }
 
         $merged = $existing !== null ? array_merge($existing, $row) : $row;
+        $scopeUserId = (int) ($merged['user_id'] ?? CurrentUser::id());
 
         if (array_key_exists('section_id', $row)) {
             $this->syncCompletedWithSection($merged);
         } elseif (array_key_exists('completed', $row)) {
             if ($this->toBool($merged['completed'] ?? false)) {
-                $merged['section_id'] = $this->getSectionIdBySlug('done');
+                $merged['section_id'] = $this->getSectionIdBySlug('done', $scopeUserId);
             } else {
-                $merged['section_id'] = $this->getSectionIdBySlug('todo');
+                $merged['section_id'] = $this->getSectionIdBySlug('todo', $scopeUserId);
             }
 
             $merged['completed'] = $this->toBool($merged['completed'] ?? false);

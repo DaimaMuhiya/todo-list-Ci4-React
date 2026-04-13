@@ -3,6 +3,7 @@
 namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
+use App\Libraries\CurrentUser;
 use App\Models\BoardSectionModel;
 use CodeIgniter\HTTP\ResponseInterface;
 
@@ -13,8 +14,11 @@ class Sections extends BaseController
      */
     public function index(): ResponseInterface
     {
+        $uid = CurrentUser::id();
+
         /** @var list<array<string, mixed>> $rows */
         $rows = model(BoardSectionModel::class)
+            ->where('user_id', $uid)
             ->orderBy('sort_order', 'ASC')
             ->orderBy('id', 'ASC')
             ->findAll();
@@ -27,6 +31,7 @@ class Sections extends BaseController
      */
     public function create(): ResponseInterface
     {
+        $uid = CurrentUser::id();
         $payload = $this->request->getJSON(true);
 
         if (! is_array($payload)) {
@@ -44,14 +49,15 @@ class Sections extends BaseController
         }
 
         $db = $this->db;
-        $maxRow = $db->query('SELECT MAX(sort_order) AS m FROM board_sections')->getRowArray();
+        $maxRow = $db->query('SELECT MAX(sort_order) AS m FROM board_sections WHERE user_id = ?', [$uid])->getRowArray();
         $sortOrder = isset($maxRow['m']) && $maxRow['m'] !== null ? (int) $maxRow['m'] + 1 : 0;
 
         $model = model(BoardSectionModel::class);
         $insert = [
-            'name' => $name,
-            'slug'        => null,
-            'sort_order'  => $sortOrder,
+            'user_id'    => $uid,
+            'name'       => $name,
+            'slug'       => null,
+            'sort_order' => $sortOrder,
         ];
 
         if ($model->insert($insert) === false) {
@@ -69,8 +75,9 @@ class Sections extends BaseController
      */
     public function delete(string $id): ResponseInterface
     {
+        $uid   = CurrentUser::id();
         $model = model(BoardSectionModel::class);
-        $row = $model->find((int) $id);
+        $row   = $model->where('user_id', $uid)->find((int) $id);
 
         if ($row === null) {
             return $this->response->setStatusCode(404)->setJSON(['error' => 'Section introuvable.']);
@@ -80,7 +87,7 @@ class Sections extends BaseController
             return $this->response->setStatusCode(422)->setJSON(['error' => 'Les sections par défaut ne peuvent pas être supprimées.']);
         }
 
-        $todoSection = $model->where('slug', 'todo')->first();
+        $todoSection = $model->where('user_id', $uid)->where('slug', 'todo')->first();
 
         if ($todoSection === null) {
             return $this->response->setStatusCode(500)->setJSON(['error' => 'Configuration des sections invalide.']);
@@ -89,7 +96,7 @@ class Sections extends BaseController
         $todoSectionId = (int) $todoSection['id'];
         $sectionId = (int) $id;
 
-        $this->db->table('todos')->where('section_id', $sectionId)->update([
+        $this->db->table('todos')->where('user_id', $uid)->where('section_id', $sectionId)->update([
             'section_id' => $todoSectionId,
             'completed'  => false,
         ]);

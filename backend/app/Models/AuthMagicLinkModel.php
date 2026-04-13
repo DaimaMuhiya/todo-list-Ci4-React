@@ -4,9 +4,9 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class BoardSectionModel extends Model
+class AuthMagicLinkModel extends Model
 {
-    protected $table            = 'board_sections';
+    protected $table            = 'auth_magic_links';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
@@ -14,9 +14,9 @@ class BoardSectionModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'user_id',
-        'name',
-        'slug',
-        'sort_order',
+        'token_hash',
+        'expires_at',
+        'used_at',
     ];
 
     protected bool $allowEmptyInserts = false;

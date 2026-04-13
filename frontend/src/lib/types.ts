@@ -1,3 +1,14 @@
+export type UserRole = "user" | "admin";
+
+export interface User {
+  id: string;
+  lastName: string;
+  firstName: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+}
+
 export type Priority = "low" | "medium" | "high";
 
 export type Category = "work" | "personal" | "urgent" | "other";

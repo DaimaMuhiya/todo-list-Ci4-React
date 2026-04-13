@@ -18,6 +18,7 @@ class TodoModel extends Model
         'completed',
         'priority',
         'category',
+        'user_id',
         'section_id',
         'due_date',
         'created_at',

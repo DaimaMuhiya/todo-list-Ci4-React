@@ -1,16 +1,18 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { Category, CategoryInfo } from "@/lib/types";
+import type { Category, CategoryInfo, User } from "@/lib/types";
 import {
   Briefcase,
-  User,
+  User as UserIcon,
   AlertTriangle,
   LayoutGrid,
   Plus,
   CheckCircle2,
   Clock,
   PanelLeftClose,
+  Shield,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -28,7 +30,7 @@ const categories: CategoryInfo[] = [
 
 const iconMap = {
   briefcase: Briefcase,
-  user: User,
+  user: UserIcon,
   alert: AlertTriangle,
   grid: LayoutGrid,
 };
@@ -43,6 +45,9 @@ interface SidebarProps {
   };
   onAddTask: () => void;
   onCollapse?: () => void;
+  user?: User | null;
+  onLogout?: () => void;
+  onAdmin?: () => void;
 }
 
 export function TodoSidebar({
@@ -51,6 +56,9 @@ export function TodoSidebar({
   stats,
   onAddTask,
   onCollapse,
+  user,
+  onLogout,
+  onAdmin,
 }: SidebarProps) {
   return (
     <aside className="flex h-full w-64 min-w-64 flex-col bg-sidebar p-4">
@@ -81,6 +89,41 @@ export function TodoSidebar({
         <Plus className="h-4 w-4" />
         Nouvelle tache
       </Button>
+
+      {user ? (
+        <div className="mb-4 space-y-2 rounded-lg border border-border bg-secondary/40 p-3">
+          <p className="truncate text-sm font-medium text-foreground">
+            {user.firstName} {user.lastName}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+          <div className="flex flex-wrap gap-2">
+            {user.role === "admin" && onAdmin ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1"
+                onClick={onAdmin}
+              >
+                <Shield className="h-3.5 w-3.5" />
+                Admin
+              </Button>
+            ) : null}
+            {onLogout ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1"
+                onClick={onLogout}
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Deconnexion
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       <nav className="flex-1">
         <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">

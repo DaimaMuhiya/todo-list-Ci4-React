@@ -44,6 +44,8 @@ class Filters extends BaseFilters
         'forcehttps'    => ForceHTTPS::class,
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
+        'jwtauth'       => \App\Filters\JwtAuth::class,
+        'admin'         => \App\Filters\AdminOnly::class,
     ];
 
     /**
@@ -62,9 +64,13 @@ class Filters extends BaseFilters
     public array $required = [
         'before' => [
             'forcehttps', // Force Global Secure Requests
+            // CORS avant pagecache : sinon une réponse servie depuis le cache n’a pas
+            // Access-Control-Allow-Origin et le navigateur bloque (fetch + credentials).
+            'cors',
             'pagecache',  // Web Page Caching
         ],
         'after' => [
+            'cors',        // Réinjecte les en-têtes CORS sur la réponse finale
             'pagecache',   // Web Page Caching
             'performance', // Performance Metrics
             'toolbar',     // Debug Toolbar
@@ -116,11 +122,5 @@ class Filters extends BaseFilters
      *
      * @var array<string, array<string, list<string>>>
      */
-    public array $filters = [
-        'cors' => [
-            'before' => ['api/*'],
-            // Réinjecte les en-têtes CORS sur la réponse finale (erreurs BDD, exceptions, etc.)
-            'after' => ['api/*'],
-        ],
-    ];
+    public array $filters = [];
 }

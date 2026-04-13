@@ -123,4 +123,36 @@ class Email extends BaseConfig
      * Enable notify message from server
      */
     public bool $DSN = false;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Le .env utilise souvent email.smtpHost (minuscules) ; les propriétés CI4 sont SMTPHost, etc.
+        if ($this->SMTPHost === '') {
+            $v = env('email.smtpHost');
+            if (\is_string($v) && $v !== '') {
+                $this->SMTPHost = $v;
+            }
+        }
+
+        if ($this->SMTPUser === '') {
+            $v = env('email.smtpUser');
+            if (\is_string($v) && $v !== '') {
+                $this->SMTPUser = $v;
+            }
+        }
+
+        if ($this->SMTPPass === '') {
+            $v = env('email.smtpPass');
+            if (\is_string($v) && $v !== '') {
+                $this->SMTPPass = $v;
+            }
+        }
+
+        $p = env('email.smtpPort');
+        if ($p !== null && $p !== false && $p !== '' && $this->SMTPPort === 25) {
+            $this->SMTPPort = (int) $p;
+        }
+    }
 }

@@ -1,12 +1,7 @@
 import type { Todo } from "@/lib/types";
+import { apiFetch } from "@/lib/api-fetch";
 
-/** En prod (`vite build`), défini dans `.env.production`. Vide en dev → proxy Vite. */
-const API_ORIGIN = (import.meta.env.VITE_API_URL as string | undefined)?.replace(
-  /\/$/,
-  "",
-) ?? "";
-
-const BASE = `${API_ORIGIN}/api/todos`;
+const BASE = "/api/todos";
 
 const API_ERROR_BODY_MAX = 4000;
 
@@ -53,7 +48,7 @@ async function handleNotOkResponse(res: Response): Promise<never> {
 type TodoJson = Todo;
 
 export async function fetchTodos(): Promise<Todo[]> {
-  const res = await fetch(BASE);
+  const res = await apiFetch(BASE);
   if (!res.ok) await handleNotOkResponse(res);
   return res.json() as Promise<TodoJson[]>;
 }
@@ -61,9 +56,8 @@ export async function fetchTodos(): Promise<Todo[]> {
 export async function createTodo(
   payload: Omit<Todo, "id" | "createdAt">,
 ): Promise<Todo> {
-  const res = await fetch(BASE, {
+  const res = await apiFetch(BASE, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
   if (!res.ok) await handleNotOkResponse(res);
@@ -74,9 +68,8 @@ export async function updateTodo(
   id: string,
   payload: Omit<Todo, "id" | "createdAt">,
 ): Promise<Todo> {
-  const res = await fetch(`${BASE}/${id}`, {
+  const res = await apiFetch(`${BASE}/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
   if (!res.ok) await handleNotOkResponse(res);
@@ -84,6 +77,6 @@ export async function updateTodo(
 }
 
 export async function deleteTodo(id: string): Promise<void> {
-  const res = await fetch(`${BASE}/${id}`, { method: "DELETE" });
+  const res = await apiFetch(`${BASE}/${id}`, { method: "DELETE" });
   if (!res.ok) await handleNotOkResponse(res);
 }
