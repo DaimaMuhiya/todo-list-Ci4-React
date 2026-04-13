@@ -320,7 +320,6 @@ export default function TaskFlowApp() {
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
           stats={stats}
-          onAddTask={() => setIsFormOpen(true)}
           onCollapse={() => setSidebarOpen(false)}
           user={user}
           onLogout={handleLogout}
@@ -369,6 +368,7 @@ export default function TaskFlowApp() {
             onTaskMove={handleTaskMove}
             onAddSection={handleAddSection}
             onDeleteSection={handleDeleteSection}
+            onAddTask={() => setIsFormOpen(true)}
             onExpandSidebar={
               sidebarOpen ? undefined : () => setSidebarOpen(true)
             }

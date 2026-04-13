@@ -7,7 +7,6 @@ import {
   User as UserIcon,
   AlertTriangle,
   LayoutGrid,
-  Plus,
   CheckCircle2,
   Clock,
   PanelLeftClose,
@@ -43,7 +42,6 @@ interface SidebarProps {
     completed: number;
     pending: number;
   };
-  onAddTask: () => void;
   onCollapse?: () => void;
   user?: User | null;
   onLogout?: () => void;
@@ -54,7 +52,6 @@ export function TodoSidebar({
   selectedCategory,
   onSelectCategory,
   stats,
-  onAddTask,
   onCollapse,
   user,
   onLogout,
@@ -81,49 +78,6 @@ export function TodoSidebar({
           </Button>
         ) : null}
       </div>
-
-      <Button
-        onClick={onAddTask}
-        className="mb-6 w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-      >
-        <Plus className="h-4 w-4" />
-        Nouvelle tache
-      </Button>
-
-      {user ? (
-        <div className="mb-4 space-y-2 rounded-lg border border-border bg-secondary/40 p-3">
-          <p className="truncate text-sm font-medium text-foreground">
-            {user.firstName} {user.lastName}
-          </p>
-          <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-          <div className="flex flex-wrap gap-2">
-            {user.role === "admin" && onAdmin ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1"
-                onClick={onAdmin}
-              >
-                <Shield className="h-3.5 w-3.5" />
-                Admin
-              </Button>
-            ) : null}
-            {onLogout ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 gap-1"
-                onClick={onLogout}
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                Deconnexion
-              </Button>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
 
       <nav className="flex-1">
         <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -186,6 +140,41 @@ export function TodoSidebar({
             <p className="text-xs text-muted-foreground">En attente</p>
           </div>
         </div>
+
+        {user ? (
+          <div className="space-y-2 rounded-lg border border-border bg-secondary/40 p-3">
+            <p className="truncate text-sm font-medium text-foreground">
+              {user.firstName} {user.lastName}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+            <div className="flex flex-wrap gap-2">
+              {user.role === "admin" && onAdmin ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1"
+                  onClick={onAdmin}
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  Admin
+                </Button>
+              ) : null}
+              {onLogout ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1"
+                  onClick={onLogout}
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  Deconnexion
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </div>
     </aside>
   );

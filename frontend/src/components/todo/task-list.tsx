@@ -61,6 +61,7 @@ interface TaskListProps {
   onTaskMove: (taskId: string, sectionId: string) => void | Promise<void>;
   onAddSection: (name: string) => void | Promise<void>;
   onDeleteSection: (sectionId: string) => void | Promise<void>;
+  onAddTask: () => void;
   /** Si défini, affiche le bouton pour rouvrir la barre latérale à gauche du titre. */
   onExpandSidebar?: () => void;
 }
@@ -79,6 +80,7 @@ export function TaskList({
   onTaskMove,
   onAddSection,
   onDeleteSection,
+  onAddTask,
   onExpandSidebar,
 }: TaskListProps) {
   const [addSectionOpen, setAddSectionOpen] = useState(false);
@@ -171,7 +173,7 @@ export function TaskList({
             </div>
             <p className="text-sm text-muted-foreground">
               {tasks.length} tache{tasks.length !== 1 ? "s" : ""} — glissez les
-              cartes entre les colonnes
+              taches entre les colonnes
             </p>
           </div>
         </div>
@@ -210,6 +212,15 @@ export function TaskList({
           >
             <Plus className="h-4 w-4" />
             Ajouter une section
+          </Button>
+
+          <Button
+            type="button"
+            className="shrink-0 gap-2 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+            onClick={onAddTask}
+          >
+            <Plus className="h-4 w-4" />
+            Nouvelle tache
           </Button>
         </div>
       </header>
