@@ -15,7 +15,7 @@ class Auth extends BaseConfig
     public int $jwtTtlSeconds = 604800;
 
     /** URL du frontend pour redirection après lien magique (sans slash final). */
-    public string $frontendBaseUrl = 'http://localhost:5173';
+    public string $frontendBaseUrl = 'https://todo-list-ci4-react.vercel.app/';
 
     public function __construct()
     {
