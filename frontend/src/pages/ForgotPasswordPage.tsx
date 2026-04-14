@@ -22,21 +22,13 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [showSentModal, setShowSentModal] = useState(false);
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!showSentModal) return;
     const id = window.setTimeout(() => setShowSentModal(false), SENT_MODAL_MS);
     return () => clearTimeout(id);
   }, [showSentModal]);
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Chargement…
-      </div>
-    );
-  }
 
   if (user) {
     return <Navigate to="/" replace />;

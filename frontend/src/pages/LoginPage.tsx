@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { setUser, user, loading } = useAuth();
+  const { setUser, user } = useAuth();
   const magicToken = searchParams.get("token")?.trim() ?? "";
 
   useEffect(() => {
@@ -30,14 +30,6 @@ export default function LoginPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
         <p className="text-sm text-muted-foreground">Connexion en cours…</p>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Chargement…
       </div>
     );
   }

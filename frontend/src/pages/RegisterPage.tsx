@@ -14,15 +14,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Chargement…
-      </div>
-    );
-  }
+  const { user } = useAuth();
 
   if (user) {
     return <Navigate to="/" replace />;

@@ -19,19 +19,11 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [completeBusy, setCompleteBusy] = useState(false);
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     setCompletionToken(null);
   }, [requestToken]);
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Chargement…
-      </div>
-    );
-  }
 
   if (user) {
     return <Navigate to="/" replace />;
