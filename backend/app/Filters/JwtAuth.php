@@ -5,6 +5,7 @@ namespace App\Filters;
 use App\Libraries\AuthToken;
 use App\Libraries\CurrentUser;
 use CodeIgniter\Filters\FilterInterface;
+use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 
@@ -14,8 +15,10 @@ class JwtAuth implements FilterInterface
     {
         CurrentUser::clear();
 
-        $config   = config('Auth');
-        $rawToken = $request->getCookie($config->cookieName);
+        $config = config('Auth');
+        $rawToken = $request instanceof IncomingRequest
+            ? $request->getCookie($config->cookieName)
+            : null;
 
         if ($rawToken === null || $rawToken === '') {
             $authHeader = $request->getHeaderLine('Authorization');

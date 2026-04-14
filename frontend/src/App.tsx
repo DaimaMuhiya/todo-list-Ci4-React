@@ -6,13 +6,19 @@ import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import AdminPage from "@/pages/AdminPage";
 import TaskFlowApp from "@/TaskFlowApp";
+import { AuthGateFallback } from "@/components/layout/auth-gate-fallback";
 import { ProtectedRouteSkeleton } from "@/components/layout/protected-route-skeleton";
+import { getStoredAccessToken } from "@/lib/auth-token-storage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <ProtectedRouteSkeleton />;
+    return getStoredAccessToken() ? (
+      <ProtectedRouteSkeleton />
+    ) : (
+      <AuthGateFallback />
+    );
   }
 
   if (!user) {
@@ -26,7 +32,11 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <ProtectedRouteSkeleton />;
+    return getStoredAccessToken() ? (
+      <ProtectedRouteSkeleton />
+    ) : (
+      <AuthGateFallback />
+    );
   }
 
   if (!user) {
