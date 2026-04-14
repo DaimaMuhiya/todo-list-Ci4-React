@@ -133,6 +133,8 @@ class Email extends BaseConfig
                 'email.fromEmail',
                 'MAIL_FROM_ADDRESS',
                 'MAIL_FROM',
+                'EMAIL_FROM_EMAIL',
+                'EMAIL_FROM',
             );
         }
 
@@ -140,10 +142,11 @@ class Email extends BaseConfig
             $this->fromName = self::envAny(
                 'email.fromName',
                 'MAIL_FROM_NAME',
+                'EMAIL_FROM_NAME',
             );
         }
 
-        $proto = self::envAny('email.protocol', 'MAIL_MAILER');
+        $proto = self::envAny('email.protocol', 'MAIL_MAILER', 'EMAIL_PROTOCOL');
         if ($proto !== '') {
             $p = strtolower($proto);
             if ($p === 'smtp' || $p === 'mail' || $p === 'sendmail') {
@@ -156,6 +159,7 @@ class Email extends BaseConfig
                 'email.smtpHost',
                 'MAIL_HOST',
                 'SMTP_HOST',
+                'EMAIL_SMTP_HOST',
             );
         }
 
@@ -164,6 +168,7 @@ class Email extends BaseConfig
                 'email.smtpUser',
                 'MAIL_USERNAME',
                 'SMTP_USER',
+                'EMAIL_SMTP_USER',
             ));
         }
 
@@ -172,31 +177,31 @@ class Email extends BaseConfig
                 'email.smtpPass',
                 'MAIL_PASSWORD',
                 'SMTP_PASS',
+                'EMAIL_SMTP_PASS',
             );
             if ($raw !== '') {
                 $this->SMTPPass = self::normalizeSmtpPassword($raw);
             }
         }
 
-        $portRaw = env('email.smtpPort');
-        if ($portRaw === null || $portRaw === false || $portRaw === '') {
-            $portRaw = env('MAIL_PORT');
-        }
-        if ($portRaw !== null && $portRaw !== false && (string) $portRaw !== '') {
-            $this->SMTPPort = (int) $portRaw;
+        $portStr = self::envAny('email.smtpPort', 'MAIL_PORT', 'EMAIL_SMTP_PORT');
+        if ($portStr !== '') {
+            $this->SMTPPort = (int) $portStr;
         }
 
-        $crypto = self::envAny('email.smtpCrypto', 'email.SMTPCrypto', 'MAIL_ENCRYPTION');
+        $crypto = self::envAny(
+            'email.smtpCrypto',
+            'email.SMTPCrypto',
+            'MAIL_ENCRYPTION',
+            'EMAIL_SMTP_CRYPTO',
+        );
         if ($crypto !== '') {
             $this->SMTPCrypto = strtolower($crypto) === 'ssl' ? 'ssl' : $crypto;
         }
 
-        $timeoutRaw = env('email.smtpTimeout');
-        if ($timeoutRaw === null || $timeoutRaw === false || $timeoutRaw === '') {
-            $timeoutRaw = env('MAIL_TIMEOUT');
-        }
-        if ($timeoutRaw !== null && $timeoutRaw !== false && (string) $timeoutRaw !== '') {
-            $this->SMTPTimeout = max(5, (int) $timeoutRaw);
+        $timeoutStr = self::envAny('email.smtpTimeout', 'MAIL_TIMEOUT', 'EMAIL_SMTP_TIMEOUT');
+        if ($timeoutStr !== '') {
+            $this->SMTPTimeout = max(5, (int) $timeoutStr);
         }
 
         // Sur les PaaS, « mail » ne fonctionne pas : si un SMTP est configure, utiliser smtp.
@@ -211,17 +216,53 @@ class Email extends BaseConfig
     }
 
     /**
-     * @param list<string> $keys Cles CodeIgniter (.env) ou style Laravel / PaaS (MAIL_*)
+     * @param list<string> $keys Cles .env (points), Laravel (MAIL_*), ou sans point (Render, etc.)
      */
     private static function envAny(string ...$keys): string
     {
         foreach ($keys as $key) {
-            $v = env($key);
-            if (\is_string($v)) {
-                $t = trim($v);
+            $variants = [$key];
+            if (str_contains($key, '.')) {
+                $variants[] = str_replace('.', '_', $key);
+            }
+
+            foreach ($variants as $k) {
+                $t = self::envRaw($k);
                 if ($t !== '') {
                     return $t;
                 }
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Lecture robuste : CodeIgniter env(), puis $_SERVER, puis getenv()
+     * (certains hebergeurs ne remplissent pas ce que lit env() seul).
+     */
+    private static function envRaw(string $key): string
+    {
+        $v = env($key);
+        if (\is_string($v)) {
+            $t = trim($v);
+            if ($t !== '') {
+                return $t;
+            }
+        }
+
+        if (isset($_SERVER[$key]) && \is_string($_SERVER[$key])) {
+            $t = trim($_SERVER[$key]);
+            if ($t !== '') {
+                return $t;
+            }
+        }
+
+        $g = getenv($key);
+        if ($g !== false) {
+            $t = trim((string) $g);
+            if ($t !== '') {
+                return $t;
             }
         }
 

@@ -20,6 +20,10 @@ cat >/etc/apache2/sites-available/000-default.conf <<EOF
 EOF
 
 cd /var/www/html
+# Sans .env dans l’image : generer depuis MAIL_* si defini (dashboard Render).
+php scripts/sync-env-from-mail.php
+if [ -f .env ]; then chown www-data:www-data .env; fi
+
 php spark migrate --all
 
 exec apache2-foreground
