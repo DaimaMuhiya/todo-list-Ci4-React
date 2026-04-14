@@ -28,6 +28,22 @@ class Logger extends BaseConfig
                 'messageType' => ErrorlogHandler::TYPE_SAPI,
             ];
         }
+
+        // Production (Render, etc.) : stderr = journaux du service visibles dans le tableau de bord.
+        if (ENVIRONMENT === 'production') {
+            $this->handlers[ErrorlogHandler::class] = [
+                'handles' => [
+                    'critical',
+                    'alert',
+                    'emergency',
+                    'error',
+                    'warning',
+                    'notice',
+                    'info',
+                ],
+                'messageType' => ErrorlogHandler::TYPE_SAPI,
+            ];
+        }
     }
 
     /**
@@ -61,7 +77,8 @@ class Logger extends BaseConfig
      *
      * @var int|list<int>
      */
-    public $threshold = (ENVIRONMENT === 'production') ? 4 : 9;
+    /** En production, inclure au moins « info » pour tracer inscription / e-mails (Render). */
+    public $threshold = (ENVIRONMENT === 'production') ? 7 : 9;
 
     /**
      * --------------------------------------------------------------------------

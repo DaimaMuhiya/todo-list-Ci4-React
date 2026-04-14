@@ -49,9 +49,17 @@ export default function RegisterPage() {
         email: email.trim().toLowerCase(),
         password,
       });
+      if (import.meta.env.DEV) {
+        console.info("[inscription]", {
+          mailSent: res.mailSent,
+          mailStatus: res.mailStatus,
+          message: res.message,
+        });
+      }
       toast({
         title: "Compte cree",
         description: res.message,
+        variant: res.mailSent ? "default" : "destructive",
       });
       navigate("/login", { replace: true });
     } catch (err) {

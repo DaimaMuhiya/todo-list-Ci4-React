@@ -94,13 +94,27 @@ class Auth extends BaseController
             return $this->response->setStatusCode(500)->setJSON(['error' => 'Inscription impossible pour le moment.']);
         }
 
-        $this->sendWelcomeEmail($email, $firstName, $rawToken);
+        log_message('info', 'Inscription: compte cree user_id=' . $userId . ' email=' . $email);
+
+        $mailStatus = $this->sendWelcomeEmail($email, $firstName, $rawToken);
 
         $user = $userModel->find($userId);
 
+        $mailSent = $mailStatus === 'sent';
+        $message  = $mailSent
+            ? 'Compte cree. Verifiez votre boite e-mail pour le lien de connexion.'
+            : 'Compte cree. Connexion possible avec votre e-mail et mot de passe. L e-mail de lien n a pas pu etre envoye — verifiez la configuration SMTP (logs serveur).';
+
+        log_message(
+            $mailSent ? 'info' : 'warning',
+            'Inscription: envoi e-mail bienvenue mailStatus=' . $mailStatus . ' user_id=' . $userId . ' email=' . $email,
+        );
+
         return $this->response->setStatusCode(201)->setJSON([
-            'user'    => $userModel->serializePublic($user),
-            'message' => 'Compte cree. Verifiez votre boite e-mail pour le lien de connexion.',
+            'user'       => $userModel->serializePublic($user),
+            'message'    => $message,
+            'mailSent'   => $mailSent,
+            'mailStatus' => $mailStatus,
         ]);
     }
 
@@ -319,7 +333,12 @@ class Auth extends BaseController
             return $this->response->setJSON($generic);
         }
 
-        $this->sendPasswordResetRequestEmail($email, (string) $user['first_name'], $rawRequest);
+        $resetMailStatus = $this->sendPasswordResetRequestEmail($email, (string) $user['first_name'], $rawRequest);
+
+        log_message(
+            $resetMailStatus === 'sent' ? 'info' : 'warning',
+            'Reinit. mot de passe: envoi e-mail mailStatus=' . $resetMailStatus . ' user_id=' . $userId . ' email=' . $email,
+        );
 
         return $this->response->setJSON($generic);
     }
@@ -480,17 +499,30 @@ class Auth extends BaseController
         );
     }
 
-       protected function sendWelcomeEmail(string $toEmail, string $firstName, string $rawMagicToken): void
+    /**
+     * @return 'sent'|'not_configured'|'send_failed'
+     */
+    protected function sendWelcomeEmail(string $toEmail, string $firstName, string $rawMagicToken): string
     {
-        $email = Services::email(null, false);
-        $from  = config('Email')->fromEmail;
-        $name  = config('Email')->fromName;
+        $cfg = config('Email');
+        $from = $cfg->fromEmail;
+        $name = $cfg->fromName;
+
+        log_message(
+            'info',
+            'E-mail bienvenue: tentative envoi vers=' . $toEmail
+            . ' protocol=' . $cfg->protocol
+            . ' smtpHost=' . ($cfg->SMTPHost !== '' ? '(defini)' : '(vide)')
+            . ' fromEmail=' . ($from !== '' ? '(defini)' : '(vide)'),
+        );
 
         if ($from === '') {
-            log_message('notice', 'E-mail non envoye : fromEmail vide (config Email).');
+            log_message('warning', 'E-mail bienvenue: abandon — fromEmail vide (config Email).');
 
-            return;
+            return 'not_configured';
         }
+
+        $email = Services::email(null, false);
 
         $loginUrl = rtrim(config('Auth')->frontendBaseUrl, '/') . '/login';
         // Lien public = page /login du frontend uniquement (le token est consommé via redirection vers l’API).
@@ -516,21 +548,39 @@ TXT;
         $email->setMessage($body);
 
         if (! $email->send()) {
-            log_message('error', 'E-mail inscription : ' . $email->printDebugger(['headers']));
+            log_message('error', 'E-mail bienvenue: echec SMTP / envoi — ' . $email->printDebugger(['headers']));
+
+            return 'send_failed';
         }
+
+        log_message('info', 'E-mail bienvenue: envoye OK vers=' . $toEmail);
+
+        return 'sent';
     }
 
-    protected function sendPasswordResetRequestEmail(string $toEmail, string $firstName, string $rawRequestToken): void
+    /**
+     * @return 'sent'|'not_configured'|'send_failed'
+     */
+    protected function sendPasswordResetRequestEmail(string $toEmail, string $firstName, string $rawRequestToken): string
     {
-        $emailService = Services::email(null, false);
-        $from         = config('Email')->fromEmail;
-        $name         = config('Email')->fromName;
+        $cfg  = config('Email');
+        $from = $cfg->fromEmail;
+        $name = $cfg->fromName;
+
+        log_message(
+            'info',
+            'E-mail reinit. MDP: tentative envoi vers=' . $toEmail
+            . ' protocol=' . $cfg->protocol
+            . ' smtpHost=' . ($cfg->SMTPHost !== '' ? '(defini)' : '(vide)'),
+        );
 
         if ($from === '') {
-            log_message('notice', 'E-mail reinit. mot de passe non envoye : fromEmail vide.');
+            log_message('warning', 'E-mail reinit. MDP: abandon — fromEmail vide.');
 
-            return;
+            return 'not_configured';
         }
+
+        $emailService = Services::email(null, false);
 
         $base     = rtrim(config('Auth')->frontendBaseUrl, '/');
         $resetUrl = $base . '/reset-password?token=' . rawurlencode($rawRequestToken);
@@ -580,7 +630,13 @@ HTML;
         $emailService->setAltMessage($plain);
 
         if (! $emailService->send()) {
-            log_message('error', 'E-mail reinit. mot de passe : ' . $emailService->printDebugger(['headers']));
+            log_message('error', 'E-mail reinit. MDP: echec — ' . $emailService->printDebugger(['headers']));
+
+            return 'send_failed';
         }
+
+        log_message('info', 'E-mail reinit. MDP: envoye OK vers=' . $toEmail);
+
+        return 'sent';
     }
 }

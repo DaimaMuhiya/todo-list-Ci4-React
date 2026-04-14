@@ -80,9 +80,16 @@ export interface RegisterPayload {
   password: string;
 }
 
+export type RegisterMailStatus = "sent" | "not_configured" | "send_failed";
+
 export async function register(
   payload: RegisterPayload,
-): Promise<{ user: User; message: string }> {
+): Promise<{
+  user: User;
+  message: string;
+  mailSent: boolean;
+  mailStatus: RegisterMailStatus;
+}> {
   const res = await apiFetch("/api/auth/register", {
     method: "POST",
     body: JSON.stringify({
@@ -93,7 +100,12 @@ export async function register(
     }),
   });
   if (!res.ok) await handleNotOkResponse(res);
-  return res.json() as Promise<{ user: User; message: string }>;
+  return res.json() as Promise<{
+    user: User;
+    message: string;
+    mailSent: boolean;
+    mailStatus: RegisterMailStatus;
+  }>;
 }
 
 export interface PasswordResetRequestPayload {
