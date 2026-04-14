@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -170,23 +170,22 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleComplete} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="rp-password">Entrez le nouveau mot de passe</Label>
-            <Input
+            <PasswordInput
               id="rp-password"
-              type="password"
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="bg-secondary"
-              required minLength={8}
+              required
+              minLength={8}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="rp-password2">
               Confirmer le nouveau mot de passe
             </Label>
-            <Input
+            <PasswordInput
               id="rp-password2"
-              type="password"
               autoComplete="new-password"
               value={passwordConfirm}
               onChange={(e) => setPasswordConfirm(e.target.value)}
